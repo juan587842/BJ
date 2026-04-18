@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Banca do Jonas - Sistema de Gestão de Estoque
 
-## Getting Started
+## Projeto criado com sucesso!
 
-First, run the development server:
+### Como rodar localmente
 
 ```bash
+cd banca-do-jonas
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse: http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Criar usuário Admin
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Acesse http://localhost:3000/admin/login
+2. Crie manualmente pelo painel do Supabase:
+   - Acesse https://supabase.com/dashboard/project/drwslymbpvdvzuyjvwle/auth/users
+   - Clique em "Add user" > "Create new user"
+   - Email: admin@bancadojonas.com
+   - Senha: admin123
+   - Auto Confirm Email: SIM
 
-## Learn More
+### Estrutura do Projeto
 
-To learn more about Next.js, take a look at the following resources:
+```
+banca-do-jonas/
+├── app/
+│   ├── (admin)/           # Painel administrativo (protegido)
+│   │   ├── login/         # Tela de login
+│   │   ├── dashboard/     # Resumo diário
+│   │   ├── caixa/         # Terminal de vendas (PDV)
+│   │   ├── estoque/       # Gestão de produtos
+│   │   ├── categorias/    # Gestão de categorias
+│   │   └── relatorios/    # Relatório de vendas
+│   ├── (catalogo)/        # Vitrine pública
+│   │   ├── page.tsx       # Home com grade de produtos
+│   │   └── produto/[id]/  # Detalhes do produto
+│   ├── layout.tsx
+│   ├── globals.css
+│   └── page.tsx
+├── components/
+│   ├── admin/AdminLayout.tsx
+│   ├── shared/ProductModal.tsx
+├── lib/supabase/
+│   ├── client.ts          # Client-side Supabase
+│   └── server.ts          # Server-side Supabase
+├── types/index.ts         # TypeScript types
+├── middleware.ts           # Auth protection
+├── Dockerfile             # Para deploy no EasyPanel
+└── supabase/migrations/
+    └── 001_create_tables.sql
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Rotas
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Rota | Acesso | Descrição |
+|------|--------|-----------|
+| `/` | Público | Catálogo (vitrine) |
+| `/produto/[id]` | Público | Detalhes do produto |
+| `/admin/login` | Público | Login do admin |
+| `/admin/dashboard` | Admin | Painel com resumo |
+| `/admin/caixa` | Admin | Terminal de vendas |
+| `/admin/estoque` | Admin | Gestão de produtos |
+| `/admin/categorias` | Admin | Gestão de categorias |
+| `/admin/relatorios` | Admin | Relatório de vendas |
 
-## Deploy on Vercel
+### Deploy no EasyPanel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push o repositório para o GitHub
+2. No EasyPanel, conecte o repositório
+3. O Dockerfile já está configurado com:
+   - Node.js 20 Alpine
+   - Timezone America/Sao_Paulo
+   - Output standalone do Next.js
+4. Adicione as variáveis de ambiente no EasyPanel:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_SITE_URL`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Banco de Dados
+
+Tabelas criadas no Supabase:
+- `categorias` - Categorias de produtos
+- `produtos` - Produtos com estoque
+- `vendas` - Registro de vendas
+- `venda_itens` - Itens de cada venda
+
+Função `finalizar_venda()` - Deduz estoque atomicamente ao finalizar venda.
