@@ -46,11 +46,11 @@ export default function SalesLineChart({ data }: SalesLineChartProps) {
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           }}
           labelStyle={{ color: 'rgba(203, 213, 225, 0.8)', marginBottom: '4px' }}
-          formatter={(value: number, name: string) => {
-            if (name === 'valor') return [`R$ ${value.toFixed(2)}`, 'Faturamento'];
-            if (name === 'quantidade') return [`${value} itens`, 'Quantidade'];
+          formatter={((value: number | undefined, name: string) => {
+            if (name === 'valor') return [`R$ ${(value ?? 0).toFixed(2)}`, 'Faturamento'];
+            if (name === 'quantidade') return [`${value ?? 0} itens`, 'Quantidade'];
             return [value, name];
-          }}
+          }) as any}
         />
         <Line
           yAxisId="left"

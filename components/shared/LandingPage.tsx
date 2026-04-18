@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Minus, Plus, MessageCircle, ChevronDown, Trophy, ShoppingBag } from 'lucide-react';
+import { MapPin, Minus, Plus, MessageCircle, ChevronDown, Trophy, ShoppingBag, CreditCard, Store } from 'lucide-react';
+import CheckoutModal from '@/components/shared/CheckoutModal';
 
 interface Produto {
   id: string;
@@ -19,9 +20,16 @@ interface Categoria {
   icone: string | null;
 }
 
+interface PedidosConfig {
+  pedidos_online_ativo: boolean;
+  pagamento_online_ativo: boolean;
+  retirada_local_ativa: boolean;
+}
+
 interface Props {
   produtos: Produto[];
   categorias: Categoria[];
+  pedidosConfig?: PedidosConfig;
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -279,8 +287,16 @@ function Faq() {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function LandingPage({ produtos, categorias }: Props) {
+export default function LandingPage({ produtos, categorias, pedidosConfig }: Props) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  const pedidosOnlineAtivo = pedidosConfig?.pedidos_online_ativo ?? false;
+  const pagamentoOnlineAtivo = pedidosConfig?.pagamento_online_ativo ?? false;
+  const retiradaLocalAtiva = pedidosConfig?.retirada_local_ativa ?? false;
+  const canCheckout =
+    pedidosOnlineAtivo && (pagamentoOnlineAtivo || retiradaLocalAtiva);
 
   const setQty = useCallback((id: string, v: number) => {
     setQtys((prev) => ({ ...prev, [id]: v }));
@@ -307,9 +323,18 @@ export default function LandingPage({ produtos, categorias }: Props) {
     document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Agrupar produtos por categoria
+  // Categoria dedicada à Copa 2026 (exibida em seção própria logo abaixo da hero)
+  const copaCategoria = categorias.find(
+    (c) => c.nome.toLowerCase() === 'copa 2026'
+  );
+  const copaProdutos = copaCategoria
+    ? produtos.filter((p) => p.categoria_id === copaCategoria.id)
+    : [];
+
+  // Agrupar produtos por categoria (excluindo a Copa 2026, que tem sua própria seção)
   const semCategoria = produtos.filter((p) => !p.categoria_id);
   const porCategoria = categorias
+    .filter((cat) => cat.id !== copaCategoria?.id)
     .map((cat) => ({
       cat,
       items: produtos.filter((p) => p.categoria_id === cat.id),
@@ -407,6 +432,74 @@ export default function LandingPage({ produtos, categorias }: Props) {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          COPA 2026 — SEÇÃO DEDICADA
+      ═══════════════════════════════════════════════════════════ */}
+      {copaProdutos.length > 0 && (
+        <section
+          id="copa-2026"
+          className="relative bg-gradient-to-b from-[#0A0800] via-black to-black border-t border-[#D4AF37]/20 py-12 px-4 sm:px-6 lg:px-8 overflow-hidden"
+        >
+          {/* Glow dourado sutil */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(212,175,55,0.10) 0%, transparent 70%)',
+            }}
+          />
+
+          <div className="relative max-w-sm sm:max-w-2xl lg:max-w-5xl mx-auto">
+            {/* Cabeçalho da seção */}
+            <div className="text-center mb-8 space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <Trophy className="w-5 h-5 text-[#D4AF37]" />
+                <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#D4AF37]/80">
+                  Edição Limitada
+                </span>
+                <Trophy className="w-5 h-5 text-[#D4AF37]" />
+              </div>
+              <h2 className="text-[1.85rem] sm:text-3xl lg:text-4xl font-black gold-text tracking-widest uppercase font-montserrat">
+                Produtos Copa 2026
+              </h2>
+              <p className="text-xs font-black tracking-[0.35em] text-[#D4AF37]/70 uppercase font-montserrat">
+                {copaCategoria?.icone ?? '🏆'} Coleção Oficial
+              </p>
+              <p className="text-sm text-white/50 max-w-md mx-auto pt-1">
+                Álbuns, figurinhas e itens exclusivos da Copa do Mundo FIFA 2026
+              </p>
+            </div>
+
+            {/* Grid / Lista de produtos Copa */}
+            {copaProdutos.some((p) => p.imagem_url) ? (
+              <div className="border border-[#D4AF37]/25 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 bg-[#080600]">
+                {copaProdutos.map((p) => (
+                  <ItemCard
+                    key={p.id}
+                    produto={p}
+                    qty={qtys[p.id] || 0}
+                    onQtyChange={(v) => setQty(p.id, v)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="border border-[#D4AF37]/25 rounded-xl bg-[#080600] p-3 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                {copaProdutos.map((p, idx) => (
+                  <ComboCard
+                    key={p.id}
+                    produto={p}
+                    qty={qtys[p.id] || 0}
+                    onQtyChange={(v) => setQty(p.id, v)}
+                    featured={idx === 0}
+                    badge={idx === 0 ? 'EDIÇÃO LIMITADA' : undefined}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════
           CATÁLOGO
@@ -641,21 +734,123 @@ export default function LandingPage({ produtos, categorias }: Props) {
             : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        <button
-          onClick={handleWhatsApp}
-          className="flex items-center gap-3 bg-[#D4AF37] text-black font-black text-sm px-4 py-3 rounded-xl shadow-xl shadow-[#D4AF37]/25 hover:bg-[#E8C44A] active:bg-[#C9A030] transition-colors"
-        >
-          <ShoppingBag className="w-4 h-4 flex-shrink-0" />
-          <div className="text-left">
-            <div className="text-[9px] font-black tracking-[0.2em] uppercase opacity-60 leading-none">
-              Finalizar via WhatsApp
+        {cartOpen ? (
+          <div className="w-[19rem] bg-[#0A0A0A] border border-[#D4AF37]/30 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#1a1a1a] flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black tracking-[0.25em] uppercase text-[#D4AF37]">
+                  Seu Carrinho
+                </p>
+                <p className="text-sm font-black text-white tabular-nums">
+                  {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'} · R$ {fmt(total)}
+                </p>
+              </div>
+              <button
+                onClick={() => setCartOpen(false)}
+                className="text-white/40 hover:text-white text-lg w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5"
+              >
+                ×
+              </button>
             </div>
-            <div className="text-[17px] font-black leading-snug tabular-nums">
-              R$ {fmt(total)}
+
+            <div className="p-3 space-y-2">
+              {canCheckout && (
+                <button
+                  onClick={() => {
+                    setCartOpen(false);
+                    setCheckoutOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 bg-[#D4AF37] text-black font-black text-sm px-4 py-3 rounded-xl hover:bg-[#E8C44A] transition-colors"
+                >
+                  {pagamentoOnlineAtivo && retiradaLocalAtiva ? (
+                    <ShoppingBag className="w-4 h-4 flex-shrink-0" />
+                  ) : pagamentoOnlineAtivo ? (
+                    <CreditCard className="w-4 h-4 flex-shrink-0" />
+                  ) : (
+                    <Store className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1">
+                    <div className="text-[9px] font-black tracking-[0.2em] uppercase opacity-70 leading-none">
+                      Fazer pedido online
+                    </div>
+                    <div className="text-[13px] font-black leading-snug mt-0.5">
+                      {pagamentoOnlineAtivo && retiradaLocalAtiva
+                        ? 'Pagar online ou retirar'
+                        : pagamentoOnlineAtivo
+                        ? 'Pagar online agora'
+                        : 'Retirar e pagar no local'}
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  handleWhatsApp();
+                  setCartOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 font-bold text-sm px-4 py-3 rounded-xl transition-colors ${
+                  canCheckout
+                    ? 'bg-[#0F1F14] border border-[#25D366]/40 text-[#25D366] hover:bg-[#142a1c]'
+                    : 'bg-[#25D366] text-white hover:bg-[#20c15e]'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                <div className="text-left flex-1">
+                  <div className="text-[9px] font-black tracking-[0.2em] uppercase opacity-70 leading-none">
+                    Reservar via WhatsApp
+                  </div>
+                  <div className="text-[13px] font-black leading-snug mt-0.5">
+                    Pré-reserva com sinal de 20%
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
-        </button>
+        ) : (
+          <button
+            onClick={() => {
+              // Se só houver uma opção (WhatsApp) vai direto
+              if (!canCheckout) {
+                handleWhatsApp();
+              } else {
+                setCartOpen(true);
+              }
+            }}
+            className="flex items-center gap-3 bg-[#D4AF37] text-black font-black text-sm px-4 py-3 rounded-xl shadow-xl shadow-[#D4AF37]/25 hover:bg-[#E8C44A] active:bg-[#C9A030] transition-colors"
+          >
+            <ShoppingBag className="w-4 h-4 flex-shrink-0" />
+            <div className="text-left">
+              <div className="text-[9px] font-black tracking-[0.2em] uppercase opacity-60 leading-none">
+                {canCheckout ? 'Finalizar pedido' : 'Finalizar via WhatsApp'}
+              </div>
+              <div className="text-[17px] font-black leading-snug tabular-nums">
+                R$ {fmt(total)}
+              </div>
+            </div>
+          </button>
+        )}
       </div>
+
+      {/* Modal de checkout online */}
+      <CheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        itens={cartItems.map((p) => ({
+          produto_id: p.id,
+          nome: p.nome,
+          preco: p.preco,
+          quantidade: qtys[p.id] || 0,
+        }))}
+        total={total}
+        pagamentoOnlineAtivo={pagamentoOnlineAtivo}
+        retiradaLocalAtiva={retiradaLocalAtiva}
+        whatsapp={WHATSAPP}
+        onSuccess={() => {
+          // Limpa carrinho ao concluir
+          setQtys({});
+        }}
+      />
     </div>
   );
 }

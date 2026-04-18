@@ -25,9 +25,21 @@ export default async function CatalogoPage() {
   const produtosTyped = (produtos as any[]) || [];
   const categoriasTyped = (categorias as any[]) || [];
 
+  const pedidosConfig = {
+    pedidos_online_ativo: config?.pedidos_online_ativo ?? false,
+    pagamento_online_ativo: config?.pagamento_online_ativo ?? false,
+    retirada_local_ativa: config?.retirada_local_ativa ?? false,
+  };
+
   if (modo === 'catalogo') {
     return <CatalogoOriginal produtos={produtosTyped} categorias={categoriasTyped} />;
   }
 
-  return <LandingPage produtos={produtosTyped} categorias={categoriasTyped} />;
+  return (
+    <LandingPage
+      produtos={produtosTyped}
+      categorias={categoriasTyped}
+      pedidosConfig={pedidosConfig}
+    />
+  );
 }

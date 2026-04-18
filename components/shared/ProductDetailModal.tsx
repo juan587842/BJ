@@ -37,7 +37,7 @@ export default function ProductDetailModal({ produtoId, onClose }: ProductDetail
       const { data, error } = await supabase
         .from('produtos')
         .select('*, categoria:categorias(nome, icone)')
-        .eq('id', produtoId)
+        .eq('id', produtoId!)
         .single();
 
       if (!error && data) {

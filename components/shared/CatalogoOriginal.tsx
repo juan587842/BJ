@@ -10,7 +10,7 @@ interface Produto {
   preco: number;
   imagem_url: string | null;
   categoria_id: string | null;
-  categoria?: { nome: string; icone: string | null } | null;
+  categoria?: { nome: string; icone: string | null } | undefined;
 }
 
 interface Categoria {
