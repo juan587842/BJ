@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MapPin, Minus, Plus, MessageCircle, ChevronDown, Trophy, ShoppingBag, CreditCard, Store } from 'lucide-react';
 import CheckoutModal from '@/components/shared/CheckoutModal';
+import { WHATSAPP } from '@/lib/constants';
 
 interface Produto {
   id: string;
@@ -36,8 +37,6 @@ interface Props {
 // Copa do Mundo 2026 começa em 11/06/2026
 const COPA_DATE = new Date('2026-06-11T12:00:00-03:00');
 const SINAL_PCT = 0.2;
-// Substitua pelo número do WhatsApp da Banca do Jonas (somente dígitos, com DDI)
-const WHATSAPP = '5512987076696';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

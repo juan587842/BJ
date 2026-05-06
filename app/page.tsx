@@ -32,7 +32,13 @@ export default async function CatalogoPage() {
   };
 
   if (modo === 'catalogo') {
-    return <CatalogoOriginal produtos={produtosTyped} categorias={categoriasTyped} />;
+    return (
+      <CatalogoOriginal
+        produtos={produtosTyped}
+        categorias={categoriasTyped}
+        pedidosConfig={pedidosConfig}
+      />
+    );
   }
 
   return (
