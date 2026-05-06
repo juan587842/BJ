@@ -27,21 +27,29 @@ export default function ComissionadosPage() {
   const [filter, setFilter] = useState<'ativa' | 'todas'>('ativa');
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
   const fetchData = async () => {
-    let query = supabase.from('consignacoes')
-      .select('*, produto:produtos(id,nome,imagem_url,preco,quantidade), fornecedor:fornecedores(id,nome)') as any;
-    if (filter === 'ativa') query = query.eq('status', 'ativa');
-    const { data } = await query.order('created_at', { ascending: false });
-    const list = (data as ConsignacaoCard[]) || [];
+    setLoading(true);
+    setFetchError('');
+    try {
+      let query = supabase.from('consignacoes')
+        .select('*, produto:produtos(id,nome,imagem_url,preco,quantidade), fornecedor:fornecedores(id,nome)') as any;
+      if (filter === 'ativa') query = query.eq('status', 'ativa');
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) { setFetchError(error.message); return; }
+      const list = (data as ConsignacaoCard[]) || [];
 
-    // resumo de cada
-    const enriched = await Promise.all(list.map(async (c) => {
-      const { data: r } = await (supabase as any).rpc('consignacao_resumo', { p_consignacao_id: c.id });
-      return { ...c, resumo: r?.[0] } as ConsignacaoCard;
-    }));
-    setConsignacoes(enriched);
-    setLoading(false);
+      const enriched = await Promise.all(list.map(async (c) => {
+        const { data: r } = await (supabase as any).rpc('consignacao_resumo', { p_consignacao_id: c.id });
+        return { ...c, resumo: r?.[0] } as ConsignacaoCard;
+      }));
+      setConsignacoes(enriched);
+    } catch (e: any) {
+      setFetchError(e?.message || 'Erro desconhecido');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, [filter]);
@@ -64,6 +72,12 @@ export default function ComissionadosPage() {
           <button onClick={() => setFilter('todas')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === 'todas' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>Todas</button>
         </div>
       </div>
+
+      {fetchError && (
+        <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-sm text-red-700 dark:text-red-400">
+          Erro: {fetchError}
+        </div>
+      )}
 
       <div className="card overflow-hidden">
         {loading ? (
