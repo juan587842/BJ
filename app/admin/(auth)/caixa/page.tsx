@@ -14,15 +14,6 @@ interface FormaPagamento {
   icone: string;
 }
 
-const formasPagamento: FormaPagamento[] = [
-  { id: '', nome: 'Não informado', icone: '💰' },
-  { id: 'dinheiro', nome: 'Dinheiro', icone: '💵' },
-  { id: 'pix', nome: 'PIX', icone: '📱' },
-  { id: 'credito', nome: 'Cartão de Crédito', icone: '💳' },
-  { id: 'debito', nome: 'Cartão de Débito', icone: '💳' },
-  { id: 'vale', nome: 'Vale Alimentação', icone: '🎫' },
-];
-
 interface CartItemExtended extends CartItem {
   precoOriginal: number;
   desconto: number;
@@ -45,12 +36,23 @@ export default function CaixaPage() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editDesconto, setEditDesconto] = useState('');
   const [editDescontoTipo, setEditDescontoTipo] = useState<'percent' | 'fixed'>('fixed');
+  const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('formas_pagamento')
+        .select('id, nome, icone')
+        .order('nome');
+      if (data) setFormasPagamento(data as FormaPagamento[]);
+    })();
+  }, [supabase]);
 
   const addToCart = useCallback((produto: Produto) => {
     setCart(prev => {
