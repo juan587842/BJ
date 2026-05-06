@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -74,6 +72,66 @@ export type Database = {
         }
         Relationships: []
       }
+      consignacoes: {
+        Row: {
+          comissao_percentual: number
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          fornecedor_id: string
+          id: string
+          observacoes: string | null
+          preco_fornecedor: number
+          produto_id: string
+          quantidade_recebida: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          comissao_percentual?: number
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          fornecedor_id: string
+          id?: string
+          observacoes?: string | null
+          preco_fornecedor: number
+          produto_id: string
+          quantidade_recebida: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          comissao_percentual?: number
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          fornecedor_id?: string
+          id?: string
+          observacoes?: string | null
+          preco_fornecedor?: number
+          produto_id?: string
+          quantidade_recebida?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consignacoes_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consignacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formas_pagamento: {
         Row: {
           created_at: string
@@ -92,6 +150,33 @@ export type Database = {
           icone?: string
           id?: string
           nome?: string
+        }
+        Relationships: []
+      }
+      fornecedores: {
+        Row: {
+          contato: string | null
+          created_at: string
+          id: string
+          nome: string
+          observacoes: string | null
+          updated_at: string
+        }
+        Insert: {
+          contato?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contato?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -237,6 +322,7 @@ export type Database = {
           ativo: boolean
           categoria_id: string | null
           codigo_barras: string | null
+          consignacao_id: string | null
           created_at: string
           descricao: string | null
           id: string
@@ -245,12 +331,14 @@ export type Database = {
           preco: number
           quantidade: number
           quantidade_minima: number
+          tipo: string
           updated_at: string
         }
         Insert: {
           ativo?: boolean
           categoria_id?: string | null
           codigo_barras?: string | null
+          consignacao_id?: string | null
           created_at?: string
           descricao?: string | null
           id?: string
@@ -259,12 +347,14 @@ export type Database = {
           preco?: number
           quantidade?: number
           quantidade_minima?: number
+          tipo?: string
           updated_at?: string
         }
         Update: {
           ativo?: boolean
           categoria_id?: string | null
           codigo_barras?: string | null
+          consignacao_id?: string | null
           created_at?: string
           descricao?: string | null
           id?: string
@@ -273,6 +363,7 @@ export type Database = {
           preco?: number
           quantidade?: number
           quantidade_minima?: number
+          tipo?: string
           updated_at?: string
         }
         Relationships: [
@@ -281,6 +372,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_consignacao_id_fkey"
+            columns: ["consignacao_id"]
+            isOneToOne: false
+            referencedRelation: "consignacoes"
             referencedColumns: ["id"]
           },
         ]
@@ -317,6 +415,8 @@ export type Database = {
       }
       venda_itens: {
         Row: {
+          comissao_valor: number
+          consignacao_id: string | null
           id: string
           preco_unitario: number
           produto_id: string
@@ -324,6 +424,8 @@ export type Database = {
           venda_id: string
         }
         Insert: {
+          comissao_valor?: number
+          consignacao_id?: string | null
           id?: string
           preco_unitario: number
           produto_id: string
@@ -331,6 +433,8 @@ export type Database = {
           venda_id: string
         }
         Update: {
+          comissao_valor?: number
+          consignacao_id?: string | null
           id?: string
           preco_unitario?: number
           produto_id?: string
@@ -338,6 +442,13 @@ export type Database = {
           venda_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "venda_itens_consignacao_id_fkey"
+            columns: ["consignacao_id"]
+            isOneToOne: false
+            referencedRelation: "consignacoes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "venda_itens_produto_id_fkey"
             columns: ["produto_id"]
@@ -347,6 +458,45 @@ export type Database = {
           },
           {
             foreignKeyName: "venda_itens_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venda_pagamentos: {
+        Row: {
+          created_at: string
+          forma_pagamento_id: string
+          id: string
+          valor: number
+          venda_id: string
+        }
+        Insert: {
+          created_at?: string
+          forma_pagamento_id: string
+          id?: string
+          valor: number
+          venda_id: string
+        }
+        Update: {
+          created_at?: string
+          forma_pagamento_id?: string
+          id?: string
+          valor?: number
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_pagamentos_forma_pagamento_id_fkey"
+            columns: ["forma_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_pagamentos_venda_id_fkey"
             columns: ["venda_id"]
             isOneToOne: false
             referencedRelation: "vendas"
@@ -395,6 +545,16 @@ export type Database = {
     }
     Functions: {
       confirmar_pedido: { Args: { pedido_id_param: string }; Returns: Json }
+      consignacao_resumo: {
+        Args: { p_consignacao_id: string }
+        Returns: {
+          comissao_total: number
+          quantidade_a_devolver: number
+          quantidade_vendida: number
+          receita_bruta: number
+          valor_devido_fornecedor: number
+        }[]
+      }
       finalizar_venda:
         | { Args: { p_itens: Json }; Returns: string }
         | {
@@ -402,6 +562,15 @@ export type Database = {
               p_desconto?: number
               p_forma_pagamento_id?: string
               p_itens: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_desconto?: number
+              p_forma_pagamento_id?: string
+              p_itens: Json
+              p_pagamentos?: Json
             }
             Returns: string
           }
@@ -416,6 +585,7 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
@@ -446,3 +616,93 @@ export type Tables<
       ? R
       : never
     : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

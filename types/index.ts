@@ -12,6 +12,8 @@ export interface Categoria {
   updated_at: string;
 }
 
+export type ProdutoTipo = 'normal' | 'comissionado';
+
 export interface Produto {
   id: string;
   codigo_barras: string | null;
@@ -23,9 +25,48 @@ export interface Produto {
   categoria_id: string | null;
   imagem_url: string | null;
   ativo: boolean;
+  tipo: string;
+  consignacao_id: string | null;
   created_at: string;
   updated_at: string;
   categoria?: Categoria;
+  consignacao?: Consignacao;
+}
+
+export interface Fornecedor {
+  id: string;
+  nome: string;
+  contato: string | null;
+  observacoes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ConsignacaoStatus = 'ativa' | 'encerrada' | 'devolvida';
+
+export interface Consignacao {
+  id: string;
+  fornecedor_id: string;
+  produto_id: string;
+  data_inicio: string;
+  data_fim: string;
+  quantidade_recebida: number;
+  preco_fornecedor: number;
+  comissao_percentual: number;
+  status: string;
+  observacoes: string | null;
+  created_at: string;
+  updated_at: string;
+  fornecedor?: Fornecedor;
+  produto?: Produto;
+}
+
+export interface ConsignacaoResumo {
+  quantidade_vendida: number;
+  quantidade_a_devolver: number;
+  receita_bruta: number;
+  comissao_total: number;
+  valor_devido_fornecedor: number;
 }
 
 export interface Venda {
@@ -43,6 +84,8 @@ export interface VendaItem {
   produto_id: string;
   quantidade: number;
   preco_unitario: number;
+  consignacao_id: string | null;
+  comissao_valor: number;
   produto?: Produto;
 }
 
