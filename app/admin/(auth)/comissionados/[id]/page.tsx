@@ -32,7 +32,7 @@ export default function ComissionadoDetalhePage() {
 
   const fetch = async () => {
     const { data } = await supabase.from('consignacoes')
-      .select('*, produto:produtos(*), fornecedor:fornecedores(*)')
+      .select('*, produto:produtos!consignacoes_produto_id_fkey(*), fornecedor:fornecedores!consignacoes_fornecedor_id_fkey(*)')
       .eq('id', params.id).single();
     setC(data as ConsigDetalhe);
     const { data: r } = await (supabase as any).rpc('consignacao_resumo', { p_consignacao_id: params.id });

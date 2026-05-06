@@ -34,7 +34,7 @@ export default function ComissionadosPage() {
     setFetchError('');
     try {
       let query = supabase.from('consignacoes')
-        .select('*, produto:produtos(id,nome,imagem_url,preco,quantidade), fornecedor:fornecedores(id,nome)') as any;
+        .select('*, produto:produtos!consignacoes_produto_id_fkey(id,nome,imagem_url,preco,quantidade), fornecedor:fornecedores!consignacoes_fornecedor_id_fkey(id,nome)') as any;
       if (filter === 'ativa') query = query.eq('status', 'ativa');
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) { setFetchError(error.message); return; }
