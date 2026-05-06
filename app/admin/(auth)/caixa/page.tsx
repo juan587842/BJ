@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { CartItem, Produto } from '@/types';
 import {
   Trash2, Plus, Minus, CheckCircle2, ScanLine, Search,
-  Pencil, X, Percent, DollarSign, Banknote
+  Pencil, X, Percent, DollarSign, Banknote, Split
 } from 'lucide-react';
 
 interface FormaPagamento {
@@ -38,6 +38,10 @@ export default function CaixaPage() {
   const [editDescontoTipo, setEditDescontoTipo] = useState<'percent' | 'fixed'>('fixed');
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
   const [valorRecebido, setValorRecebido] = useState('');
+  const [dividir, setDividir] = useState(false);
+  const [selectedForma2, setSelectedForma2] = useState('');
+  const [valor1, setValor1] = useState('');
+  const [valor2, setValor2] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -162,15 +166,42 @@ export default function CaixaPage() {
     setDescontoGlobal(0);
     setDescontoGlobalTipo('fixed');
     setSelectedForma('');
+    setSelectedForma2('');
+    setValor1('');
+    setValor2('');
     setValorRecebido('');
+    setDividir(false);
     setShowPaymentModal(true);
   };
 
+  const ehDinheiro = (id: string) =>
+    formasPagamento.find(f => f.id === id)?.nome.toLowerCase().includes('dinheiro') ?? false;
+
   const formaSelecionada = formasPagamento.find(f => f.id === selectedForma);
-  const isDinheiro = formaSelecionada?.nome.toLowerCase().includes('dinheiro') ?? false;
+  const formaSelecionada2 = formasPagamento.find(f => f.id === selectedForma2);
+  const isDinheiro1 = ehDinheiro(selectedForma);
+  const isDinheiro2 = ehDinheiro(selectedForma2);
   const valorRecebidoNum = parseFloat(valorRecebido.replace(',', '.')) || 0;
-  const troco = isDinheiro ? Math.max(valorRecebidoNum - total, 0) : 0;
-  const trocoInsuficiente = isDinheiro && valorRecebido !== '' && valorRecebidoNum < total;
+  const valor1Num = parseFloat(valor1.replace(',', '.')) || 0;
+  const valor2Num = parseFloat(valor2.replace(',', '.')) || 0;
+
+  // Single mode: troco baseado no total
+  // Split mode: troco baseado apenas na parte em dinheiro (valor1 ou valor2)
+  const valorDinheiroSplit = isDinheiro1 ? valor1Num : isDinheiro2 ? valor2Num : 0;
+  const baseTroco = dividir ? valorDinheiroSplit : total;
+  const algumDinheiro = dividir ? (isDinheiro1 || isDinheiro2) : isDinheiro1;
+  const troco = algumDinheiro ? Math.max(valorRecebidoNum - baseTroco, 0) : 0;
+  const trocoInsuficiente = algumDinheiro && valorRecebido !== '' && valorRecebidoNum < baseTroco;
+
+  const somaSplit = valor1Num + valor2Num;
+  const splitOk = !dividir || (
+    selectedForma !== '' &&
+    selectedForma2 !== '' &&
+    selectedForma !== selectedForma2 &&
+    valor1Num > 0 &&
+    valor2Num > 0 &&
+    Math.abs(somaSplit - total) < 0.005
+  );
 
   const handleCheckout = async () => {
     setProcessing(true);
@@ -189,10 +220,18 @@ export default function CaixaPage() {
       preco_unitario: getItemPrice(item),
     }));
 
+    const pagamentos = dividir
+      ? [
+          { forma_pagamento_id: selectedForma, valor: Number(valor1Num.toFixed(2)) },
+          { forma_pagamento_id: selectedForma2, valor: Number(valor2Num.toFixed(2)) },
+        ]
+      : null;
+
     const { data, error } = await (supabase as any).rpc('finalizar_venda', {
       p_itens: items,
       p_forma_pagamento_id: selectedForma || null,
       p_desconto: descontoValor,
+      p_pagamentos: pagamentos,
     });
 
     setProcessing(false);
@@ -207,6 +246,11 @@ export default function CaixaPage() {
     setCart([]);
     setDescontoGlobal(0);
     setValorRecebido('');
+    setValor1('');
+    setValor2('');
+    setSelectedForma('');
+    setSelectedForma2('');
+    setDividir(false);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 2000);
     inputRef.current?.focus();
@@ -499,29 +543,122 @@ export default function CaixaPage() {
 
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Forma de Pagamento</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {formasPagamento.map(fp => (
-                    <button
-                      key={fp.id}
-                      type="button"
-                      onClick={() => { setSelectedForma(fp.id); setValorRecebido(''); }}
-                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-xs font-medium transition-all ${
-                        selectedForma === fp.id
-                          ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400'
-                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <span className="text-lg">{fp.icone}</span>
-                      <span className="truncate w-full text-center">{fp.nome}</span>
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Forma de Pagamento</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const novo = !dividir;
+                      setDividir(novo);
+                      setValorRecebido('');
+                      if (novo) {
+                        setValor1((total / 2).toFixed(2));
+                        setValor2((total / 2).toFixed(2));
+                      } else {
+                        setSelectedForma2('');
+                        setValor1('');
+                        setValor2('');
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      dividir
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <Split className="w-3.5 h-3.5" />
+                    Dividir em 2
+                  </button>
                 </div>
+
+                {!dividir ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {formasPagamento.map(fp => (
+                      <button
+                        key={fp.id}
+                        type="button"
+                        onClick={() => { setSelectedForma(fp.id); setValorRecebido(''); }}
+                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-xs font-medium transition-all ${
+                          selectedForma === fp.id
+                            ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400'
+                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <span className="text-lg">{fp.icone}</span>
+                        <span className="truncate w-full text-center">{fp.nome}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {[
+                      { idx: 1, sel: selectedForma, setSel: setSelectedForma, val: valor1, setVal: setValor1, outro: selectedForma2 },
+                      { idx: 2, sel: selectedForma2, setSel: setSelectedForma2, val: valor2, setVal: setValor2, outro: selectedForma },
+                    ].map(linha => (
+                      <div key={linha.idx} className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pagamento {linha.idx}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const outroVal = linha.idx === 1 ? valor2Num : valor1Num;
+                              const novo = Math.max(total - outroVal, 0).toFixed(2);
+                              linha.setVal(novo);
+                            }}
+                            className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                          >
+                            Restante
+                          </button>
+                        </div>
+                        <select
+                          value={linha.sel}
+                          onChange={(e) => { linha.setSel(e.target.value); setValorRecebido(''); }}
+                          className="input-field text-sm py-2"
+                        >
+                          <option value="">Selecione...</option>
+                          {formasPagamento
+                            .filter(f => f.id !== linha.outro || f.id === linha.sel)
+                            .map(fp => (
+                              <option key={fp.id} value={fp.id}>{fp.icone} {fp.nome}</option>
+                            ))}
+                        </select>
+                        <div className="relative">
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={linha.val}
+                            onChange={(e) => linha.setVal(e.target.value)}
+                            placeholder="0,00"
+                            className="input-field pl-9 text-sm"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <div className={`rounded-lg p-2.5 text-xs flex justify-between ${
+                      Math.abs(somaSplit - total) < 0.005
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                        : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                    }`}>
+                      <span className="font-medium">Soma R$ {somaSplit.toFixed(2)} / Total R$ {total.toFixed(2)}</span>
+                      <span>
+                        {Math.abs(somaSplit - total) < 0.005
+                          ? 'OK'
+                          : somaSplit > total
+                          ? `Excesso R$ ${(somaSplit - total).toFixed(2)}`
+                          : `Falta R$ ${(total - somaSplit).toFixed(2)}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {isDinheiro && (
+              {algumDinheiro && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Valor Recebido</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    {dividir ? `Valor Recebido (parte em dinheiro: R$ ${baseTroco.toFixed(2)})` : 'Valor Recebido'}
+                  </label>
                   <div className="flex gap-2 mb-2">
                     {[5, 10, 20, 50, 100, 200].map(v => (
                       <button
@@ -537,7 +674,7 @@ export default function CaixaPage() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setValorRecebido(total.toFixed(2))}
+                      onClick={() => setValorRecebido(baseTroco.toFixed(2))}
                       className="px-3 py-2 text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors whitespace-nowrap"
                     >
                       Exato
@@ -550,9 +687,8 @@ export default function CaixaPage() {
                         min="0"
                         value={valorRecebido}
                         onChange={(e) => setValorRecebido(e.target.value)}
-                        placeholder={total.toFixed(2)}
+                        placeholder={baseTroco.toFixed(2)}
                         className="input-field pl-9"
-                        autoFocus
                       />
                     </div>
                   </div>
@@ -562,14 +698,14 @@ export default function CaixaPage() {
                       <span className="font-medium text-slate-900 dark:text-slate-100">R$ {valorRecebidoNum.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">Total</span>
-                      <span className="font-medium text-slate-900 dark:text-slate-100">R$ {total.toFixed(2)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">{dividir ? 'Parte em dinheiro' : 'Total'}</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">R$ {baseTroco.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-baseline pt-1 border-t border-slate-100 dark:border-slate-800">
                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Troco</span>
                       {trocoInsuficiente ? (
                         <span className="text-sm font-semibold text-red-500">
-                          Falta R$ {(total - valorRecebidoNum).toFixed(2)}
+                          Falta R$ {(baseTroco - valorRecebidoNum).toFixed(2)}
                         </span>
                       ) : (
                         <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
@@ -644,10 +780,16 @@ export default function CaixaPage() {
 
               <button
                 onClick={handleCheckout}
-                disabled={processing || trocoInsuficiente}
+                disabled={processing || trocoInsuficiente || !splitOk}
                 className="w-full btn-success text-base py-3"
               >
-                {processing ? 'Processando...' : trocoInsuficiente ? 'Valor recebido insuficiente' : 'Confirmar Venda'}
+                {processing
+                  ? 'Processando...'
+                  : trocoInsuficiente
+                  ? 'Valor recebido insuficiente'
+                  : !splitOk
+                  ? 'Ajuste a divisão'
+                  : 'Confirmar Venda'}
               </button>
             </div>
           </div>
