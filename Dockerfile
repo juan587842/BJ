@@ -1,6 +1,10 @@
-FROM node:20-alpine AS base
+FROM node:20-bookworm-slim AS base
 
-RUN apk add --no-cache tzdata
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends tzdata ca-certificates \
+ && ln -fs /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime \
+ && dpkg-reconfigure -f noninteractive tzdata \
+ && rm -rf /var/lib/apt/lists/*
 ENV TZ=America/Sao_Paulo
 
 FROM base AS deps
@@ -29,8 +33,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV TZ=America/Sao_Paulo
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs \
+ && useradd --system --uid 1001 --gid nodejs --no-create-home nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
