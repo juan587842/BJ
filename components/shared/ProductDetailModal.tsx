@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { X, PackageCheck, Tag, FileText, DollarSign } from 'lucide-react';
+import { X, PackageCheck, Tag, FileText, DollarSign, Minus, Plus, ShoppingBag } from 'lucide-react';
 
 interface ProductDetailModalProps {
   produtoId: string | null;
   onClose: () => void;
+  cartQty?: number;
+  onCartQtyChange?: (qty: number) => void;
 }
 
 interface Produto {
@@ -24,7 +26,9 @@ interface Produto {
   };
 }
 
-export default function ProductDetailModal({ produtoId, onClose }: ProductDetailModalProps) {
+export default function ProductDetailModal({ produtoId, onClose, cartQty, onCartQtyChange }: ProductDetailModalProps) {
+  const cartEnabled = typeof onCartQtyChange === 'function';
+  const qty = cartQty ?? 0;
   const supabase = createClient();
   const [produto, setProduto] = useState<Produto | null>(null);
   const [loading, setLoading] = useState(false);
@@ -151,7 +155,42 @@ export default function ProductDetailModal({ produtoId, onClose }: ProductDetail
           )}
         </div>
 
-        <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-200 dark:border-slate-700 flex-shrink-0 space-y-2">
+          {cartEnabled && produto && (
+            qty > 0 ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center flex-1">
+                  <button
+                    onClick={() => onCartQtyChange!(Math.max(0, qty - 1))}
+                    className="w-10 h-10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-l-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors"
+                    aria-label="Diminuir"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <div className="flex-1 h-10 flex items-center justify-center text-slate-900 dark:text-slate-100 text-sm font-semibold border-y border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 tabular-nums select-none">
+                    {qty} no carrinho
+                  </div>
+                  <button
+                    onClick={() => onCartQtyChange!(Math.min(produto.quantidade, qty + 1))}
+                    disabled={qty >= produto.quantidade}
+                    className="w-10 h-10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-r-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    aria-label="Aumentar"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => onCartQtyChange!(1)}
+                disabled={produto.quantidade <= 0}
+                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold text-sm py-3 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Adicionar ao carrinho
+              </button>
+            )
+          )}
           <button onClick={onClose} className="btn-secondary w-full">
             Fechar
           </button>

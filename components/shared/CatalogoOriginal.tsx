@@ -277,6 +277,10 @@ export default function CatalogoOriginal({ produtos, categorias, pedidosConfig }
         <ProductDetailModal
           produtoId={selectedProductId}
           onClose={() => setSelectedProductId(null)}
+          cartQty={selectedProductId ? qtys[selectedProductId] || 0 : 0}
+          onCartQtyChange={(v) => {
+            if (selectedProductId) setQty(selectedProductId, v);
+          }}
         />
       )}
 
