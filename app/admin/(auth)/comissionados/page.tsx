@@ -28,12 +28,11 @@ export default function ComissionadosPage() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetch = async () => {
+  const fetchData = async () => {
     let query = supabase.from('consignacoes')
-      .select('*, produto:produtos(id,nome,imagem_url,preco,quantidade), fornecedor:fornecedores(id,nome)')
-      .order('created_at', { ascending: false });
+      .select('*, produto:produtos(id,nome,imagem_url,preco,quantidade), fornecedor:fornecedores(id,nome)') as any;
     if (filter === 'ativa') query = query.eq('status', 'ativa');
-    const { data } = await query;
+    const { data } = await query.order('created_at', { ascending: false });
     const list = (data as ConsignacaoCard[]) || [];
 
     // resumo de cada
@@ -45,7 +44,7 @@ export default function ComissionadosPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, [filter]);
+  useEffect(() => { fetchData(); }, [filter]);
 
   return (
     <div className="space-y-6">
@@ -130,7 +129,7 @@ export default function ComissionadosPage() {
 
       {showModal && (
         <ConsignacaoModal
-          onSave={() => { setShowModal(false); fetch(); }}
+          onSave={() => { setShowModal(false); fetchData(); }}
           onClose={() => setShowModal(false)}
         />
       )}
