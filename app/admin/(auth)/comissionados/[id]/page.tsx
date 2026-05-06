@@ -32,7 +32,7 @@ export default function ComissionadoDetalhePage() {
 
   const fetch = async () => {
     const { data } = await supabase.from('consignacoes')
-      .select('*, produto:produtos!consignacoes_produto_id_fkey(*), fornecedor:fornecedores!consignacoes_fornecedor_id_fkey(*)')
+      .select('*, produto:produtos!consignacoes_produto_id_fkey(id,nome,descricao,imagem_url,preco,quantidade,consignacao_id), fornecedor:fornecedores!consignacoes_fornecedor_id_fkey(id,nome,contato,observacoes)')
       .eq('id', params.id).single();
     setC(data as ConsigDetalhe);
     const { data: r } = await (supabase as any).rpc('consignacao_resumo', { p_consignacao_id: params.id });
@@ -98,14 +98,28 @@ export default function ComissionadoDetalhePage() {
             )}
           </div>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-slate-500">Preço venda</span><span className="font-semibold text-slate-900 dark:text-slate-100">R$ {Number(c.produto?.preco || 0).toFixed(2)}</span></div>
+            {c.produto?.descricao && (
+              <p className="text-slate-600 dark:text-slate-300 text-sm pb-2">{c.produto.descricao}</p>
+            )}
+            <div className="flex justify-between border-t border-slate-100 dark:border-slate-700 pt-2"><span className="text-slate-500">Preço venda</span><span className="font-semibold text-slate-900 dark:text-slate-100">R$ {Number(c.produto?.preco || 0).toFixed(2)}</span></div>
             <div className="flex justify-between"><span className="text-slate-500">Preço fornecedor</span><span className="font-semibold text-slate-900 dark:text-slate-100">R$ {Number(c.preco_fornecedor).toFixed(2)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Comissão</span><span className="font-semibold text-slate-900 dark:text-slate-100">{Number(c.comissao_percentual).toFixed(2)}%</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Comissão banca</span><span className="font-semibold text-slate-900 dark:text-slate-100">{Number(c.comissao_percentual).toFixed(2)}%</span></div>
             <div className="flex items-center gap-1.5 pt-2 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700">
               <Calendar className="w-3 h-3" />
               {new Date(c.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')} → {new Date(c.data_fim + 'T00:00:00').toLocaleDateString('pt-BR')}
             </div>
-            {c.observacoes && <p className="text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-700">{c.observacoes}</p>}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Fornecedor</p>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">{c.fornecedor?.nome}</p>
+              {(c.fornecedor as any)?.contato && <p className="text-xs text-slate-500">{(c.fornecedor as any).contato}</p>}
+              {(c.fornecedor as any)?.observacoes && <p className="text-xs text-slate-400">{(c.fornecedor as any).observacoes}</p>}
+            </div>
+            {c.observacoes && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Observações</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{c.observacoes}</p>
+              </div>
+            )}
           </div>
         </div>
 
