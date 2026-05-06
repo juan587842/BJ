@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { CartItem, Produto } from '@/types';
 import {
   Trash2, Plus, Minus, CheckCircle2, ScanLine, Search,
-  Pencil, X, Percent, DollarSign
+  Pencil, X, Percent, DollarSign, Banknote
 } from 'lucide-react';
 
 interface FormaPagamento {
@@ -37,6 +37,7 @@ export default function CaixaPage() {
   const [editDesconto, setEditDesconto] = useState('');
   const [editDescontoTipo, setEditDescontoTipo] = useState<'percent' | 'fixed'>('fixed');
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
+  const [valorRecebido, setValorRecebido] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -161,8 +162,15 @@ export default function CaixaPage() {
     setDescontoGlobal(0);
     setDescontoGlobalTipo('fixed');
     setSelectedForma('');
+    setValorRecebido('');
     setShowPaymentModal(true);
   };
+
+  const formaSelecionada = formasPagamento.find(f => f.id === selectedForma);
+  const isDinheiro = formaSelecionada?.nome.toLowerCase().includes('dinheiro') ?? false;
+  const valorRecebidoNum = parseFloat(valorRecebido.replace(',', '.')) || 0;
+  const troco = isDinheiro ? Math.max(valorRecebidoNum - total, 0) : 0;
+  const trocoInsuficiente = isDinheiro && valorRecebido !== '' && valorRecebidoNum < total;
 
   const handleCheckout = async () => {
     setProcessing(true);
@@ -198,6 +206,7 @@ export default function CaixaPage() {
     setShowPaymentModal(false);
     setCart([]);
     setDescontoGlobal(0);
+    setValorRecebido('');
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 2000);
     inputRef.current?.focus();
@@ -496,7 +505,7 @@ export default function CaixaPage() {
                     <button
                       key={fp.id}
                       type="button"
-                      onClick={() => setSelectedForma(fp.id)}
+                      onClick={() => { setSelectedForma(fp.id); setValorRecebido(''); }}
                       className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-xs font-medium transition-all ${
                         selectedForma === fp.id
                           ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400'
@@ -509,6 +518,68 @@ export default function CaixaPage() {
                   ))}
                 </div>
               </div>
+
+              {isDinheiro && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Valor Recebido</label>
+                  <div className="flex gap-2 mb-2">
+                    {[5, 10, 20, 50, 100, 200].map(v => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setValorRecebido(String(v))}
+                        className="flex-1 px-2 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        R${v}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setValorRecebido(total.toFixed(2))}
+                      className="px-3 py-2 text-xs font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors whitespace-nowrap"
+                    >
+                      Exato
+                    </button>
+                    <div className="relative flex-1">
+                      <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={valorRecebido}
+                        onChange={(e) => setValorRecebido(e.target.value)}
+                        placeholder={total.toFixed(2)}
+                        className="input-field pl-9"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">Recebido</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">R$ {valorRecebidoNum.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">Total</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">R$ {total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-baseline pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Troco</span>
+                      {trocoInsuficiente ? (
+                        <span className="text-sm font-semibold text-red-500">
+                          Falta R$ {(total - valorRecebidoNum).toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          R$ {troco.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Desconto na Venda</label>
@@ -573,10 +644,10 @@ export default function CaixaPage() {
 
               <button
                 onClick={handleCheckout}
-                disabled={processing}
+                disabled={processing || trocoInsuficiente}
                 className="w-full btn-success text-base py-3"
               >
-                {processing ? 'Processando...' : 'Confirmar Venda'}
+                {processing ? 'Processando...' : trocoInsuficiente ? 'Valor recebido insuficiente' : 'Confirmar Venda'}
               </button>
             </div>
           </div>
