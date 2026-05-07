@@ -39,6 +39,26 @@ function formatCpfInput(v: string) {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
+function cpfValido(cpf: string) {
+  const d = cpf.replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += parseInt(d[i]) * (10 - i);
+  let r = 11 - (s % 11);
+  const dv1 = r >= 10 ? 0 : r;
+  if (dv1 !== parseInt(d[9])) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += parseInt(d[i]) * (11 - i);
+  r = 11 - (s % 11);
+  const dv2 = r >= 10 ? 0 : r;
+  return dv2 === parseInt(d[10]);
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function emailValido(e: string) {
+  return EMAIL_RE.test(e.trim());
+}
+
 type Step = 'form' | 'sucesso';
 
 export default function CheckoutModal({
@@ -67,9 +87,15 @@ export default function CheckoutModal({
 
   if (!open) return null;
 
+  const cpfPreenchido = cpf.replace(/\D/g, '').length > 0;
+  const cpfOk = !cpfPreenchido || cpfValido(cpf);
+  const emailOk = email.trim() === '' || emailValido(email);
+
   const podeEnviar =
     nome.trim().length >= 3 &&
     wa.replace(/\D/g, '').length >= 10 &&
+    cpfOk &&
+    emailOk &&
     tipoPagamento !== null &&
     itens.length > 0 &&
     !enviando;
@@ -248,15 +274,25 @@ export default function CheckoutModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="E-mail (opcional)"
-                  className="w-full px-3.5 py-2.5 bg-[#060606] border border-[#252525] rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#D4AF37]/60 transition-colors"
+                  className={`w-full px-3.5 py-2.5 bg-[#060606] border rounded-xl text-sm text-white placeholder-white/30 focus:outline-none transition-colors ${
+                    !emailOk ? 'border-red-500/60 focus:border-red-500' : 'border-[#252525] focus:border-[#D4AF37]/60'
+                  }`}
                 />
+                {!emailOk && (
+                  <p className="text-[11px] text-red-400 -mt-1.5">E-mail inválido.</p>
+                )}
                 <input
                   type="text"
                   value={cpf}
                   onChange={(e) => setCpf(formatCpfInput(e.target.value))}
                   placeholder="CPF na nota (opcional)"
-                  className="w-full px-3.5 py-2.5 bg-[#060606] border border-[#252525] rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#D4AF37]/60 transition-colors"
+                  className={`w-full px-3.5 py-2.5 bg-[#060606] border rounded-xl text-sm text-white placeholder-white/30 focus:outline-none transition-colors ${
+                    !cpfOk ? 'border-red-500/60 focus:border-red-500' : 'border-[#252525] focus:border-[#D4AF37]/60'
+                  }`}
                 />
+                {!cpfOk && (
+                  <p className="text-[11px] text-red-400 -mt-1.5">CPF inválido.</p>
+                )}
                 <textarea
                   value={observacoes}
                   onChange={(e) => setObservacoes(e.target.value)}

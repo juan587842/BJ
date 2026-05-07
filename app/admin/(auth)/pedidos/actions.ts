@@ -26,18 +26,14 @@ export async function cancelarPedido(pedidoId: string, motivo?: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Não autorizado.' };
 
-  const { error } = await supabase
-    .from('pedidos')
-    .update({
-      status: 'cancelado',
-      cancelado_em: new Date().toISOString(),
-      observacoes: motivo || null,
-    })
-    .eq('id', pedidoId)
-    .in('status', ['pendente', 'pago']);
+  // RPC atômica: valida status, devolve estoque (se confirmado), marca cancelado.
+  const { error } = await (supabase as any).rpc('cancelar_pedido', {
+    pedido_id_param: pedidoId,
+    motivo_param: motivo?.trim() || null,
+  });
 
   if (error) {
-    return { success: false, error: 'Erro ao cancelar pedido.' };
+    return { success: false, error: error.message || 'Erro ao cancelar pedido.' };
   }
 
   revalidatePath('/admin/pedidos');

@@ -17,7 +17,11 @@ export default async function RelatoriosPage({
 
   const params = await searchParams;
   const periodo = params.periodo || '7dias';
-  const dataReferenciaStr = params.data || '2026-04-06';
+  const hojeISO = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+  const dataReferenciaStr = params.data || hojeISO;
   
   // Use local time for the reference date to avoid timezone shift issues
   const [ano, mes, dia] = dataReferenciaStr.split('-').map(Number);

@@ -39,7 +39,7 @@ export default async function HistoricoPage({
   const [{ data: vendas }, { data: stats }] = await Promise.all([
     supabase
       .from('vendas')
-      .select('*, forma_pagamento:formas_pagamento(nome, icone)')
+      .select('*, forma_pagamento:formas_pagamento(nome, icone), pagamentos:venda_pagamentos(forma_pagamento_id, valor, forma:formas_pagamento(nome, icone))')
       .gte('created_at', inicioStr)
       .lte('created_at', fimStr)
       .order('created_at', { ascending: false }),
@@ -172,7 +172,14 @@ export default async function HistoricoPage({
                       </p>
                     </td>
                     <td className="px-6 py-3.5 text-center">
-                      {venda.forma_pagamento ? (
+                      {venda.pagamentos && venda.pagamentos.length > 1 ? (
+                        <span
+                          className="badge badge-neutral"
+                          title={venda.pagamentos.map((p: any) => `${p.forma?.nome ?? ''}: R$ ${Number(p.valor).toFixed(2)}`).join(' + ')}
+                        >
+                          Dividido ({venda.pagamentos.map((p: any) => p.forma?.icone ?? '').join(' ')})
+                        </span>
+                      ) : venda.forma_pagamento ? (
                         <span className="badge badge-neutral" title={venda.forma_pagamento.nome}>
                           {venda.forma_pagamento.icone} {venda.forma_pagamento.nome}
                         </span>

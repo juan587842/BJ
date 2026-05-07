@@ -18,6 +18,7 @@ interface CartItemExtended extends CartItem {
   precoOriginal: number;
   desconto: number;
   descontoTipo: 'percent' | 'fixed';
+  estoque: number;
 }
 
 export default function CaixaPage() {
@@ -44,6 +45,7 @@ export default function CaixaPage() {
   const [valor2, setValor2] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const checkoutLockRef = useRef(false);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -60,9 +62,19 @@ export default function CaixaPage() {
   }, [supabase]);
 
   const addToCart = useCallback((produto: Produto) => {
+    if (Number(produto.quantidade) <= 0) {
+      setCheckoutError(`"${produto.nome}" sem estoque.`);
+      setTimeout(() => setCheckoutError(''), 2500);
+      return;
+    }
     setCart(prev => {
       const existing = prev.find(item => item.produto_id === produto.id);
       if (existing) {
+        if (existing.quantidade + 1 > existing.estoque) {
+          setCheckoutError(`Estoque máximo de "${produto.nome}" atingido (${existing.estoque}).`);
+          setTimeout(() => setCheckoutError(''), 2500);
+          return prev;
+        }
         return prev.map(item =>
           item.produto_id === produto.id
             ? { ...item, quantidade: item.quantidade + 1 }
@@ -78,6 +90,7 @@ export default function CaixaPage() {
         imagem_url: produto.imagem_url,
         desconto: 0,
         descontoTipo: 'fixed',
+        estoque: Number(produto.quantidade),
       }];
     });
     setSearchResults([]);
@@ -131,11 +144,16 @@ export default function CaixaPage() {
   const updateQuantity = (produtoId: string, delta: number) => {
     setCart(prev =>
       prev
-        .map(item =>
-          item.produto_id === produtoId
-            ? { ...item, quantidade: item.quantidade + delta }
-            : item
-        )
+        .map(item => {
+          if (item.produto_id !== produtoId) return item;
+          const nova = item.quantidade + delta;
+          if (delta > 0 && nova > item.estoque) {
+            setCheckoutError(`Estoque máximo de "${item.nome}" atingido (${item.estoque}).`);
+            setTimeout(() => setCheckoutError(''), 2500);
+            return item;
+          }
+          return { ...item, quantidade: nova };
+        })
         .filter(item => item.quantidade > 0)
     );
   };
@@ -156,8 +174,11 @@ export default function CaixaPage() {
 
   const subtotal = cart.reduce((acc, item) => acc + getItemPrice(item) * item.quantidade, 0);
   const descontoValor = descontoGlobalTipo === 'percent'
-    ? subtotal * (descontoGlobal / 100)
-    : descontoGlobal;
+    ? subtotal * (Math.min(Math.max(descontoGlobal, 0), 100) / 100)
+    : Math.min(Math.max(descontoGlobal, 0), subtotal);
+  const descontoExcedido = descontoGlobalTipo === 'percent'
+    ? descontoGlobal > 100
+    : descontoGlobal > subtotal && subtotal > 0;
   const total = Math.max(subtotal - descontoValor, 0);
   const itemCount = cart.reduce((acc, item) => acc + item.quantidade, 0);
 
@@ -204,56 +225,65 @@ export default function CaixaPage() {
   );
 
   const handleCheckout = async () => {
+    if (checkoutLockRef.current) return;
+    checkoutLockRef.current = true;
     setProcessing(true);
     setCheckoutError('');
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setCheckoutError('Sessão expirada. Faça login novamente.');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setCheckoutError('Sessão expirada. Faça login novamente.');
+        return;
+      }
+
+      const items = cart.map(item => ({
+        produto_id: item.produto_id,
+        quantidade: item.quantidade,
+        preco_unitario: getItemPrice(item),
+      }));
+
+      // Forma dominante: maior valor no split (ou única forma no single)
+      const formaDominante = dividir
+        ? (valor1Num >= valor2Num ? selectedForma : selectedForma2)
+        : selectedForma;
+
+      const pagamentos = dividir
+        ? [
+            { forma_pagamento_id: selectedForma, valor: Number(valor1Num.toFixed(2)) },
+            { forma_pagamento_id: selectedForma2, valor: Number(valor2Num.toFixed(2)) },
+          ]
+        : null;
+
+      const { error } = await (supabase as any).rpc('finalizar_venda', {
+        p_itens: items,
+        p_forma_pagamento_id: formaDominante || null,
+        p_desconto: descontoValor,
+        p_pagamentos: pagamentos,
+      });
+
+      if (error) {
+        console.error('Erro ao finalizar venda:', error);
+        setCheckoutError(error.message || 'Erro ao finalizar a venda');
+        return;
+      }
+
+      setShowPaymentModal(false);
+      setCart([]);
+      setDescontoGlobal(0);
+      setValorRecebido('');
+      setValor1('');
+      setValor2('');
+      setSelectedForma('');
+      setSelectedForma2('');
+      setDividir(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
+      inputRef.current?.focus();
+    } finally {
       setProcessing(false);
-      return;
+      checkoutLockRef.current = false;
     }
-
-    const items = cart.map(item => ({
-      produto_id: item.produto_id,
-      quantidade: item.quantidade,
-      preco_unitario: getItemPrice(item),
-    }));
-
-    const pagamentos = dividir
-      ? [
-          { forma_pagamento_id: selectedForma, valor: Number(valor1Num.toFixed(2)) },
-          { forma_pagamento_id: selectedForma2, valor: Number(valor2Num.toFixed(2)) },
-        ]
-      : null;
-
-    const { data, error } = await (supabase as any).rpc('finalizar_venda', {
-      p_itens: items,
-      p_forma_pagamento_id: selectedForma || null,
-      p_desconto: descontoValor,
-      p_pagamentos: pagamentos,
-    });
-
-    setProcessing(false);
-
-    if (error) {
-      console.error('Erro ao finalizar venda:', error);
-      setCheckoutError(error.message || 'Erro ao finalizar a venda');
-      return;
-    }
-
-    setShowPaymentModal(false);
-    setCart([]);
-    setDescontoGlobal(0);
-    setValorRecebido('');
-    setValor1('');
-    setValor2('');
-    setSelectedForma('');
-    setSelectedForma2('');
-    setDividir(false);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 2000);
-    inputRef.current?.focus();
   };
 
   const startEditDiscount = (item: CartItemExtended) => {
@@ -263,13 +293,15 @@ export default function CaixaPage() {
   };
 
   const applyItemDiscount = (produtoId: string) => {
-    const desconto = parseFloat(editDesconto) || 0;
+    const raw = parseFloat(editDesconto) || 0;
     setCart(prev =>
-      prev.map(item =>
-        item.produto_id === produtoId
-          ? { ...item, desconto, descontoTipo: editDescontoTipo }
-          : item
-      )
+      prev.map(item => {
+        if (item.produto_id !== produtoId) return item;
+        const desconto = editDescontoTipo === 'percent'
+          ? Math.min(Math.max(raw, 0), 100)
+          : Math.min(Math.max(raw, 0), item.precoOriginal);
+        return { ...item, desconto, descontoTipo: editDescontoTipo };
+      })
     );
     setEditingItemId(null);
     setEditDesconto('');
@@ -759,6 +791,11 @@ export default function CaixaPage() {
                     />
                   </div>
                 </div>
+                {descontoExcedido && (
+                  <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                    Desconto maior que {descontoGlobalTipo === 'percent' ? '100%' : 'o subtotal'} — limitado automaticamente.
+                  </p>
+                )}
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 space-y-1.5">
