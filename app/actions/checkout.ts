@@ -112,42 +112,27 @@ export async function criarPedidoPublico(input: CheckoutInput): Promise<Checkout
     });
   }
 
-  // 3. Cliente: upsert por whatsapp
+  // 3. Cliente: upsert atômico por whatsapp (unique constraint garante 1 linha)
   const waNormalizado = input.cliente.whatsapp.replace(/\D/g, '');
-  let clienteId: string | null = null;
-
-  const { data: existente } = await admin
+  const { data: clienteUpsert, error: cliErr } = await admin
     .from('clientes')
-    .select('id')
-    .eq('whatsapp', waNormalizado)
-    .maybeSingle();
-
-  if (existente) {
-    clienteId = existente.id;
-    await admin
-      .from('clientes')
-      .update({
-        nome: input.cliente.nome.trim(),
-        email: input.cliente.email?.trim() || null,
-        cpf: input.cliente.cpf?.replace(/\D/g, '') || null,
-      })
-      .eq('id', clienteId);
-  } else {
-    const { data: novoCliente, error: cliErr } = await admin
-      .from('clientes')
-      .insert({
+    .upsert(
+      {
         nome: input.cliente.nome.trim(),
         whatsapp: waNormalizado,
         email: input.cliente.email?.trim() || null,
         cpf: input.cliente.cpf?.replace(/\D/g, '') || null,
-      })
-      .select('id')
-      .single();
-    if (cliErr || !novoCliente) {
-      return { success: false, error: 'Erro ao registrar cliente.' };
-    }
-    clienteId = novoCliente.id;
+      },
+      { onConflict: 'whatsapp' }
+    )
+    .select('id')
+    .single();
+
+  if (cliErr || !clienteUpsert) {
+    console.error('[checkout] erro ao upsert cliente:', cliErr);
+    return { success: false, error: 'Erro ao registrar cliente.' };
   }
+  const clienteId = clienteUpsert.id;
 
   // 4. Criar pedido
   const modoSumup: SumupMode = (config.sumup_modo as SumupMode) ?? 'sandbox';
