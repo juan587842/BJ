@@ -356,14 +356,16 @@ export default function LandingPage({ produtos, categorias, pedidosConfig }: Pro
           muted
           playsInline
         />
+        {/* Overlay base escuro */}
+        <div className="absolute inset-0 bg-black/60" />
         {/* Overlay gradiente */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/25 to-black/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/98" />
         {/* Luzes laterais do estádio */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse 55% 65% at 0% 50%, rgba(0,90,30,0.38) 0%, transparent 70%), radial-gradient(ellipse 55% 65% at 100% 50%, rgba(0,90,30,0.38) 0%, transparent 70%)',
+              'radial-gradient(ellipse 55% 65% at 0% 50%, rgba(0,90,30,0.25) 0%, transparent 70%), radial-gradient(ellipse 55% 65% at 100% 50%, rgba(0,90,30,0.25) 0%, transparent 70%)',
           }}
         />
 
