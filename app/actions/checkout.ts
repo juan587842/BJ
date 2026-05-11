@@ -180,12 +180,15 @@ export async function criarPedidoPublico(input: CheckoutInput): Promise<Checkout
   let checkoutUrl: string | null = null;
   if (input.tipo_pagamento === 'online') {
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
+      const returnUrl = siteUrl ? `${siteUrl}/pedido/${pedido.id}` : undefined;
       const checkout = await criarCheckout(modoSumup, {
         pedidoId: pedido.id,
         pedidoNumero: pedido.numero,
         valorCentavos: totalCentavos,
         descricao: `Banca do Jonas — Pedido #${String(pedido.numero).padStart(4, '0')}`,
         clienteEmail: input.cliente.email ?? null,
+        returnUrl,
       });
       if (checkout) {
         checkoutUrl = checkout.checkoutUrl;

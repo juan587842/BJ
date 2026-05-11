@@ -104,3 +104,49 @@ export async function criarCheckout(
 
   return { checkoutId: data.id, checkoutUrl };
 }
+
+export interface SumupCheckoutStatus {
+  id: string;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'EXPIRED' | string;
+  transactionId?: string | null;
+  transactionCode?: string | null;
+  amount?: number;
+  currency?: string;
+}
+
+/**
+ * Consulta o estado de um checkout no SumUp. Fonte da verdade ao processar webhook
+ * ou redirecionamento de retorno (não confiar apenas no payload do webhook).
+ */
+export async function consultarCheckout(
+  modo: SumupMode,
+  checkoutId: string
+): Promise<SumupCheckoutStatus | null> {
+  const creds = getCredentials(modo);
+  if (!creds) return null;
+
+  const res = await fetch(`${creds.baseUrl}/v0.1/checkouts/${checkoutId}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${creds.apiKey}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    console.error(`[SumUp] consultarCheckout falhou (${res.status})`);
+    return null;
+  }
+
+  const data = (await res.json()) as any;
+  const tx = Array.isArray(data?.transactions) && data.transactions.length > 0
+    ? data.transactions[0]
+    : null;
+
+  return {
+    id: data.id,
+    status: String(data.status ?? 'PENDING').toUpperCase(),
+    transactionId: tx?.id ?? null,
+    transactionCode: tx?.transaction_code ?? null,
+    amount: data.amount,
+    currency: data.currency,
+  };
+}
