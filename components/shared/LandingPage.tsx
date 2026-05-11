@@ -347,14 +347,14 @@ export default function LandingPage({ produtos, categorias, pedidosConfig }: Pro
           HERO
       ═══════════════════════════════════════════════════════════ */}
       <section className="relative flex flex-col items-center justify-center min-h-screen overflow-hidden px-5 sm:px-8 lg:px-12 pb-20 pt-14">
-        {/* Background: troféu Copa 2026
-            → Substitua pela sua própria imagem em /public/hero-bg.png se desejar */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage:
-              "url('https://bancasanja.online/assets/hero-trophy-bg-D4K_Lwch.png')",
-          }}
+        {/* Background: vídeo hero */}
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          src="/hero-video.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
         />
         {/* Overlay gradiente */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/25 to-black/95" />
