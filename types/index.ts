@@ -104,7 +104,51 @@ export interface SiteConfig {
   pagamento_online_ativo: boolean;
   retirada_local_ativa: boolean;
   sumup_modo: 'sandbox' | 'producao';
+  impressoes_ativa: boolean;
+  impressao_preco_pb_centavos: number;
+  impressao_preco_colorida_centavos: number;
   updated_at: string;
+}
+
+export interface TipoImpressao {
+  id: string;
+  nome: string;
+  icone: string | null;
+  ordem: number;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ImpressaoStatus = 'pendente' | 'pago' | 'em_producao' | 'concluido' | 'cancelado';
+export type ImpressaoModoCor = 'pb' | 'colorida';
+
+export interface Impressao {
+  id: string;
+  numero: number;
+  cliente_id: string | null;
+  cliente_nome: string;
+  cliente_whatsapp: string;
+  cliente_email: string | null;
+  tipo_impressao_id: string | null;
+  tipo_impressao_nome: string;
+  modo_cor: ImpressaoModoCor;
+  quantidade_folhas: number;
+  preco_unitario_centavos: number;
+  total_centavos: number;
+  arquivo_path: string;
+  arquivo_nome: string | null;
+  observacoes: string | null;
+  tipo_pagamento: TipoPagamento;
+  status: ImpressaoStatus;
+  sumup_checkout_id: string | null;
+  sumup_transaction_id: string | null;
+  sumup_modo: string | null;
+  created_at: string;
+  updated_at: string;
+  pago_em: string | null;
+  concluido_em: string | null;
+  cancelado_em: string | null;
 }
 
 export interface Cliente {

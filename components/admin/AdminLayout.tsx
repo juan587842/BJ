@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { LogOut, LayoutDashboard, ShoppingCart, Package, FolderOpen, BarChart3, Menu, X, Store, Clock, Sun, Moon, Settings, ShoppingBag, Handshake, Truck, FileText } from 'lucide-react';
+import { LogOut, LayoutDashboard, ShoppingCart, Package, FolderOpen, BarChart3, Menu, X, Store, Clock, Sun, Moon, Settings, ShoppingBag, Handshake, Truck, FileText, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/components/shared/ThemeProviderClient';
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/caixa', label: 'Caixa', icon: ShoppingCart },
   { href: '/admin/pedidos', label: 'Pedidos Online', icon: ShoppingBag },
+  { href: '/admin/impressoes', label: 'Impressões', icon: Printer },
   { href: '/admin/estoque', label: 'Estoque', icon: Package },
   { href: '/admin/comissionados', label: 'Comissionados', icon: Handshake },
   { href: '/admin/fornecedores', label: 'Fornecedores', icon: Truck },

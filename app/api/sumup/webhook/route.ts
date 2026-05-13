@@ -7,11 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Webhook SumUp: recebe notificação de mudança de status de checkout
- * e atualiza o pedido. Sempre consulta a API SumUp como fonte da verdade
- * (não confia no payload do webhook).
- *
- * SumUp envia POST JSON com `id` (checkout id) e `event_type`. Verificação
- * de assinatura HMAC não é uniforme entre planos — aqui revalidamos via API.
+ * e atualiza o pedido OU a impressão. Consulta a API SumUp como fonte da verdade.
  */
 export async function POST(req: NextRequest) {
   let payload: any;
@@ -28,45 +24,92 @@ export async function POST(req: NextRequest) {
 
   const admin = await createAdminClient();
 
+  // Tenta achar em pedidos
   const { data: pedido } = await admin
     .from('pedidos')
     .select('id, status, total_centavos, sumup_modo')
     .eq('sumup_checkout_id', checkoutId)
     .maybeSingle();
 
-  if (!pedido) {
-    return NextResponse.json({ error: 'pedido not found' }, { status: 404 });
-  }
-
-  const modo: SumupMode = (pedido.sumup_modo as SumupMode) ?? 'sandbox';
-  const status = await consultarCheckout(modo, checkoutId);
-  if (!status) {
-    return NextResponse.json({ error: 'sumup query failed' }, { status: 502 });
-  }
-
-  if (status.status === 'PAID' && pedido.status === 'pendente') {
-    const { error } = await admin
-      .from('pedidos')
-      .update({
-        status: 'pago',
-        sumup_transaction_id: status.transactionId ?? status.transactionCode ?? null,
-      })
-      .eq('id', pedido.id)
-      .eq('status', 'pendente');
-
-    if (error) {
-      console.error('[sumup webhook] update pedido falhou:', error);
-      return NextResponse.json({ error: 'update failed' }, { status: 500 });
+  if (pedido) {
+    const modo: SumupMode = ((pedido as any).sumup_modo as SumupMode) ?? 'sandbox';
+    const status = await consultarCheckout(modo, checkoutId);
+    if (!status) {
+      return NextResponse.json({ error: 'sumup query failed' }, { status: 502 });
     }
-  } else if ((status.status === 'FAILED' || status.status === 'EXPIRED') && pedido.status === 'pendente') {
-    await admin
-      .from('pedidos')
-      .update({ status: 'cancelado', cancelado_em: new Date().toISOString() })
-      .eq('id', pedido.id)
-      .eq('status', 'pendente');
+
+    if (status.status === 'PAID' && (pedido as any).status === 'pendente') {
+      const { error } = await admin
+        .from('pedidos')
+        .update({
+          status: 'pago',
+          sumup_transaction_id: status.transactionId ?? status.transactionCode ?? null,
+        })
+        .eq('id', (pedido as any).id)
+        .eq('status', 'pendente');
+
+      if (error) {
+        console.error('[sumup webhook] update pedido falhou:', error);
+        return NextResponse.json({ error: 'update failed' }, { status: 500 });
+      }
+    } else if (
+      (status.status === 'FAILED' || status.status === 'EXPIRED') &&
+      (pedido as any).status === 'pendente'
+    ) {
+      await admin
+        .from('pedidos')
+        .update({ status: 'cancelado', cancelado_em: new Date().toISOString() })
+        .eq('id', (pedido as any).id)
+        .eq('status', 'pendente');
+    }
+
+    return NextResponse.json({ ok: true, kind: 'pedido', status: status.status });
   }
 
-  return NextResponse.json({ ok: true, status: status.status });
+  // Tenta achar em impressoes
+  const { data: impressao } = await admin
+    .from('impressoes')
+    .select('id, status, total_centavos, sumup_modo')
+    .eq('sumup_checkout_id', checkoutId)
+    .maybeSingle();
+
+  if (impressao) {
+    const modo: SumupMode = ((impressao as any).sumup_modo as SumupMode) ?? 'sandbox';
+    const status = await consultarCheckout(modo, checkoutId);
+    if (!status) {
+      return NextResponse.json({ error: 'sumup query failed' }, { status: 502 });
+    }
+
+    if (status.status === 'PAID' && (impressao as any).status === 'pendente') {
+      const { error } = await admin
+        .from('impressoes')
+        .update({
+          status: 'pago',
+          pago_em: new Date().toISOString(),
+          sumup_transaction_id: status.transactionId ?? status.transactionCode ?? null,
+        })
+        .eq('id', (impressao as any).id)
+        .eq('status', 'pendente');
+
+      if (error) {
+        console.error('[sumup webhook] update impressao falhou:', error);
+        return NextResponse.json({ error: 'update failed' }, { status: 500 });
+      }
+    } else if (
+      (status.status === 'FAILED' || status.status === 'EXPIRED') &&
+      (impressao as any).status === 'pendente'
+    ) {
+      await admin
+        .from('impressoes')
+        .update({ status: 'cancelado', cancelado_em: new Date().toISOString() })
+        .eq('id', (impressao as any).id)
+        .eq('status', 'pendente');
+    }
+
+    return NextResponse.json({ ok: true, kind: 'impressao', status: status.status });
+  }
+
+  return NextResponse.json({ error: 'pedido/impressao not found' }, { status: 404 });
 }
 
 export async function GET() {

@@ -180,6 +180,105 @@ export type Database = {
         }
         Relationships: []
       }
+      impressoes: {
+        Row: {
+          arquivo_nome: string | null
+          arquivo_path: string
+          cancelado_em: string | null
+          cliente_email: string | null
+          cliente_id: string | null
+          cliente_nome: string
+          cliente_whatsapp: string
+          concluido_em: string | null
+          created_at: string
+          id: string
+          modo_cor: string
+          numero: number
+          observacoes: string | null
+          pago_em: string | null
+          preco_unitario_centavos: number
+          quantidade_folhas: number
+          status: string
+          sumup_checkout_id: string | null
+          sumup_modo: string | null
+          sumup_transaction_id: string | null
+          tipo_impressao_id: string | null
+          tipo_impressao_nome: string
+          tipo_pagamento: string
+          total_centavos: number
+          updated_at: string
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          arquivo_path: string
+          cancelado_em?: string | null
+          cliente_email?: string | null
+          cliente_id?: string | null
+          cliente_nome: string
+          cliente_whatsapp: string
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          modo_cor: string
+          numero?: number
+          observacoes?: string | null
+          pago_em?: string | null
+          preco_unitario_centavos: number
+          quantidade_folhas: number
+          status?: string
+          sumup_checkout_id?: string | null
+          sumup_modo?: string | null
+          sumup_transaction_id?: string | null
+          tipo_impressao_id?: string | null
+          tipo_impressao_nome: string
+          tipo_pagamento: string
+          total_centavos: number
+          updated_at?: string
+        }
+        Update: {
+          arquivo_nome?: string | null
+          arquivo_path?: string
+          cancelado_em?: string | null
+          cliente_email?: string | null
+          cliente_id?: string | null
+          cliente_nome?: string
+          cliente_whatsapp?: string
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          modo_cor?: string
+          numero?: number
+          observacoes?: string | null
+          pago_em?: string | null
+          preco_unitario_centavos?: number
+          quantidade_folhas?: number
+          status?: string
+          sumup_checkout_id?: string | null
+          sumup_modo?: string | null
+          sumup_transaction_id?: string | null
+          tipo_impressao_id?: string | null
+          tipo_impressao_nome?: string
+          tipo_pagamento?: string
+          total_centavos?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impressoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impressoes_tipo_impressao_id_fkey"
+            columns: ["tipo_impressao_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_impressao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedido_itens: {
         Row: {
           created_at: string
@@ -386,6 +485,9 @@ export type Database = {
       site_config: {
         Row: {
           id: number
+          impressao_preco_colorida_centavos: number
+          impressao_preco_pb_centavos: number
+          impressoes_ativa: boolean
           modo_catalogo: string
           pagamento_online_ativo: boolean
           pedidos_online_ativo: boolean
@@ -395,6 +497,9 @@ export type Database = {
         }
         Insert: {
           id?: number
+          impressao_preco_colorida_centavos?: number
+          impressao_preco_pb_centavos?: number
+          impressoes_ativa?: boolean
           modo_catalogo?: string
           pagamento_online_ativo?: boolean
           pedidos_online_ativo?: boolean
@@ -404,11 +509,44 @@ export type Database = {
         }
         Update: {
           id?: number
+          impressao_preco_colorida_centavos?: number
+          impressao_preco_pb_centavos?: number
+          impressoes_ativa?: boolean
           modo_catalogo?: string
           pagamento_online_ativo?: boolean
           pedidos_online_ativo?: boolean
           retirada_local_ativa?: boolean
           sumup_modo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tipos_impressao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
           updated_at?: string
         }
         Relationships: []
@@ -540,11 +678,16 @@ export type Database = {
         ]
       }
     }
-    Views: {
-      [_ in never]: never
-    }
+    Views: { [_ in never]: never }
     Functions: {
-      confirmar_pedido: { Args: { pedido_id_param: string }; Returns: Json }
+      cancelar_pedido: {
+        Args: { motivo_param?: string; pedido_id_param: string }
+        Returns: undefined
+      }
+      confirmar_pedido: {
+        Args: { pedido_id_param: string }
+        Returns: undefined
+      }
       consignacao_resumo: {
         Args: { p_consignacao_id: string }
         Returns: {
@@ -555,154 +698,17 @@ export type Database = {
           valor_devido_fornecedor: number
         }[]
       }
-      finalizar_venda:
-        | { Args: { p_itens: Json }; Returns: string }
-        | {
-            Args: {
-              p_desconto?: number
-              p_forma_pagamento_id?: string
-              p_itens: Json
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_desconto?: number
-              p_forma_pagamento_id?: string
-              p_itens: Json
-              p_pagamentos?: Json
-            }
-            Returns: string
-          }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+      finalizar_venda: {
+        Args: {
+          p_desconto?: number
+          p_forma_pagamento_id?: string
+          p_itens: Json
+          p_pagamentos?: Json
+        }
+        Returns: string
       }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
     }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const

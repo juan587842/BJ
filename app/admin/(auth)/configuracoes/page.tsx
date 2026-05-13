@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import ConfiguracoesClient from './ConfiguracoesClient';
-import type { SiteConfig } from '@/types';
+import type { SiteConfig, TipoImpressao } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,15 +17,25 @@ export default async function ConfiguracoesPage() {
     .eq('id', 1)
     .single();
 
-  const config = (data as SiteConfig | null) ?? {
+  const config = ((data as SiteConfig | null) ?? {
     id: 1,
     modo_catalogo: 'copa',
     pedidos_online_ativo: true,
     pagamento_online_ativo: true,
     retirada_local_ativa: true,
     sumup_modo: 'sandbox',
+    impressoes_ativa: false,
+    impressao_preco_pb_centavos: 50,
+    impressao_preco_colorida_centavos: 150,
     updated_at: new Date().toISOString(),
-  };
+  }) as SiteConfig;
 
-  return <ConfiguracoesClient config={config} />;
+  const { data: tiposData } = await supabase
+    .from('tipos_impressao')
+    .select('*')
+    .order('ordem', { ascending: true })
+    .order('nome', { ascending: true });
+  const tipos = (tiposData as TipoImpressao[] | null) ?? [];
+
+  return <ConfiguracoesClient config={config} tiposImpressao={tipos} />;
 }
