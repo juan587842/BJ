@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Minus, Plus, MessageCircle, ChevronDown, Trophy, ShoppingBag, CreditCard, Store } from 'lucide-react';
+import { MapPin, Minus, Plus, MessageCircle, ChevronDown, Trophy, ShoppingBag, CreditCard, Store, Printer } from 'lucide-react';
 import CheckoutModal from '@/components/shared/CheckoutModal';
 import { WHATSAPP } from '@/lib/constants';
 
@@ -31,6 +31,7 @@ interface Props {
   produtos: Produto[];
   categorias: Categoria[];
   pedidosConfig?: PedidosConfig;
+  impressoesAtiva?: boolean;
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -286,7 +287,7 @@ function Faq() {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function LandingPage({ produtos, categorias, pedidosConfig }: Props) {
+export default function LandingPage({ produtos, categorias, pedidosConfig, impressoesAtiva }: Props) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -342,6 +343,17 @@ export default function LandingPage({ produtos, categorias, pedidosConfig }: Pro
 
   return (
     <div className="min-h-screen bg-black text-white font-montserrat overflow-x-hidden">
+
+      {/* Link fixo para Impressões */}
+      {impressoesAtiva && (
+        <a
+          href="/impressoes"
+          className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-[#0D0B00] border border-[#D4AF37]/40 text-[#D4AF37] font-black text-[11px] tracking-[0.15em] uppercase px-4 py-2.5 rounded-xl hover:bg-[#D4AF37]/15 hover:border-[#D4AF37]/60 transition-colors shadow-lg shadow-black/40"
+        >
+          <Printer className="w-4 h-4" />
+          Impressões
+        </a>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════
           HERO
@@ -429,6 +441,15 @@ export default function LandingPage({ produtos, categorias, pedidosConfig }: Pro
               <Trophy className="w-4 h-4" />
               Garantir Prioridade
             </button>
+            {impressoesAtiva && (
+              <a
+                href="/impressoes"
+                className="w-full flex items-center justify-center gap-2.5 bg-[#0D0B00] border border-[#D4AF37]/40 text-[#D4AF37] font-black text-[13px] tracking-[0.18em] uppercase py-3.5 rounded-xl hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/60 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                Serviço de Impressão
+              </a>
+            )}
             <p className="text-[10px] text-white/35">Sinal de 20% · Menos de 1 minuto</p>
           </div>
         </div>

@@ -30,6 +30,7 @@ export default async function CatalogoPage() {
     pagamento_online_ativo: config?.pagamento_online_ativo ?? false,
     retirada_local_ativa: config?.retirada_local_ativa ?? false,
   };
+  const impressoesAtiva = config?.impressoes_ativa ?? true;
 
   if (modo === 'catalogo') {
     return (
@@ -37,6 +38,7 @@ export default async function CatalogoPage() {
         produtos={produtosTyped}
         categorias={categoriasTyped}
         pedidosConfig={pedidosConfig}
+        impressoesAtiva={impressoesAtiva}
       />
     );
   }
@@ -46,6 +48,7 @@ export default async function CatalogoPage() {
       produtos={produtosTyped}
       categorias={categoriasTyped}
       pedidosConfig={pedidosConfig}
+      impressoesAtiva={impressoesAtiva}
     />
   );
 }
