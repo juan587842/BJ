@@ -60,14 +60,25 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
   }
 
   // Tipo de impressão
-  const { data: tipo, error: tipoErr } = await admin
-    .from('tipos_impressao')
-    .select('id, nome, ativo')
-    .eq('id', input.tipo_impressao_id)
-    .single();
+  const isDefaultId = input.tipo_impressao_id.startsWith('default-');
+  let tipoId: string | null = null;
+  let tipoNome = '';
 
-  if (tipoErr || !tipo || !(tipo as any).ativo) {
-    return { success: false, error: 'Tipo de impressão indisponível.' };
+  if (isDefaultId) {
+    tipoNome = input.tipo_impressao_id === 'default-a4' ? 'A4' : input.tipo_impressao_id === 'default-a3' ? 'A3' : 'Ofício';
+    tipoId = null;
+  } else {
+    const { data: tipo, error: tipoErr } = await admin
+      .from('tipos_impressao')
+      .select('id, nome, ativo')
+      .eq('id', input.tipo_impressao_id)
+      .single();
+
+    if (tipoErr || !tipo || !(tipo as any).ativo) {
+      return { success: false, error: 'Tipo de impressão indisponível.' };
+    }
+    tipoId = (tipo as any).id;
+    tipoNome = (tipo as any).nome;
   }
 
   // Preço (server-side)
@@ -106,8 +117,8 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
       cliente_nome: input.cliente.nome.trim(),
       cliente_whatsapp: waNormalizado,
       cliente_email: input.cliente.email?.trim() || null,
-      tipo_impressao_id: (tipo as any).id,
-      tipo_impressao_nome: (tipo as any).nome,
+      tipo_impressao_id: tipoId,
+      tipo_impressao_nome: tipoNome,
       modo_cor: input.modo_cor,
       quantidade_folhas: input.quantidade_folhas,
       preco_unitario_centavos: precoUnitario,

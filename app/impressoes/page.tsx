@@ -16,10 +16,14 @@ export default async function ImpressoesPage() {
     .eq('id', 1)
     .single();
 
-  const config = configData as SiteConfig | null;
-  if (!config || !config.impressoes_ativa) {
-    notFound();
-  }
+  const config = (configData as SiteConfig | null) ?? {
+    impressoes_ativa: true,
+    pagamento_online_ativo: false,
+    retirada_local_ativa: true,
+    impressao_preco_pb_centavos: 50,
+    impressao_preco_colorida_centavos: 150,
+    sumup_modo: 'sandbox',
+  } as SiteConfig;
 
   const { data: tiposData } = await supabase
     .from('tipos_impressao')
@@ -28,7 +32,14 @@ export default async function ImpressoesPage() {
     .order('ordem', { ascending: true })
     .order('nome', { ascending: true });
 
-  const tipos = (tiposData as TipoImpressao[] | null) ?? [];
+  let tipos = (tiposData as TipoImpressao[] | null) ?? [];
+
+  if (tipos.length === 0) {
+    tipos = [
+      { id: 'default-a4', nome: 'A4', icone: '📄', ordem: 0, ativo: true, created_at: '', updated_at: '' },
+      { id: 'default-a3', nome: 'A3', icone: '📋', ordem: 1, ativo: true, created_at: '', updated_at: '' },
+    ] as TipoImpressao[];
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
