@@ -188,15 +188,13 @@ export default function CatalogoOriginal({ produtos, categorias, pedidosConfig, 
                 Banca do Jonas
               </span>
             </div>
-            {impressoesAtiva && (
-              <a
-                href="/impressoes"
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-              >
-                <Printer className="w-4 h-4" />
-                Impressões
-              </a>
-            )}
+            <a
+              href="/impressoes"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+            >
+              <Printer className="w-4 h-4" />
+              Impressões
+            </a>
           </div>
         </div>
       </header>
