@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
   }
 
   const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
+  const headersToSet: [string, string][] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,8 +23,11 @@ export async function POST(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookies) {
+        setAll(cookies, headers) {
           cookiesToSet.push(...cookies);
+          if (headers) {
+            Object.entries(headers).forEach(([key, value]) => headersToSet.push([key, value]));
+          }
         },
       },
     }
@@ -45,6 +49,9 @@ export async function POST(request: NextRequest) {
 
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options);
+  });
+  headersToSet.forEach(([key, value]) => {
+    response.headers.set(key, value);
   });
 
   return response;

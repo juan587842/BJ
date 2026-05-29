@@ -7,6 +7,7 @@ export async function proxy(request: NextRequest) {
   const isLoginPage = pathname === '/admin/login';
 
   const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
+  const headersToSet: [string, string][] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,9 +17,12 @@ export async function proxy(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookies) {
+        setAll(cookies, headers) {
           cookiesToSet.push(...cookies);
           cookies.forEach(({ name, value }) => request.cookies.set(name, value));
+          if (headers) {
+            Object.entries(headers).forEach(([key, value]) => headersToSet.push([key, value]));
+          }
         },
       },
     }
@@ -27,42 +31,29 @@ export async function proxy(request: NextRequest) {
   let user = null;
   try {
     ({ data: { user } } = await supabase.auth.getUser());
-  } catch {}
+  } catch (e) {
+    console.error('[proxy] getUser failed:', e);
+  }
+
+  const applyCookiesAndHeaders = (res: NextResponse) => {
+    cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+    headersToSet.forEach(([key, value]) => res.headers.set(key, value));
+    return res;
+  };
 
   if (isLoginPage && user) {
-    const res = NextResponse.redirect(new URL('/admin/dashboard', request.url));
-    cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
-    return res;
+    return applyCookiesAndHeaders(NextResponse.redirect(new URL('/admin/dashboard', request.url)));
   }
 
   if (!isLoginPage && !user) {
     const loginUrl = new URL('/admin/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    const res = NextResponse.redirect(loginUrl);
-    cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
-    return res;
+    return applyCookiesAndHeaders(NextResponse.redirect(loginUrl));
   }
 
-  const res = NextResponse.next({ request });
-  cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
-  return res;
+  return applyCookiesAndHeaders(NextResponse.next({ request }));
 }
 
 export const config = {
-  matcher: [
-    '/admin/login',
-    '/admin/dashboard',
-    '/admin/caixa',
-    '/admin/pedidos',
-    '/admin/impressoes',
-    '/admin/estoque',
-    '/admin/comissionados',
-    '/admin/comissionados/:path*',
-    '/admin/fornecedores',
-    '/admin/categorias',
-    '/admin/historico',
-    '/admin/relatorios',
-    '/admin/curriculo',
-    '/admin/configuracoes',
-  ],
+  matcher: ['/admin/:path*'],
 };

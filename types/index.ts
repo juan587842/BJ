@@ -1,4 +1,4 @@
-// ─── Generated database types (source of truth for Supabase client) ──────────
+﻿// ─── Generated database types (source of truth for Supabase client) ──────────
 export type { Database } from './database';
 
 // ─── Application-level interfaces ─────────────────────────────────────────────
