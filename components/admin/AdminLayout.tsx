@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { LogOut, LayoutDashboard, ShoppingCart, Package, FolderOpen, BarChart3, Menu, X, Store, Clock, Sun, Moon, Settings, ShoppingBag, Handshake, Truck, FileText, Printer } from 'lucide-react';
 import Link from 'next/link';
@@ -50,8 +49,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/admin/login';
   };
 

@@ -3,15 +3,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json();
-
-  if (!email || !password) {
-    return NextResponse.json(
-      { error: 'Email e senha são obrigatórios' },
-      { status: 400 }
-    );
-  }
-
   const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
 
   const supabase = createServerClient(
@@ -29,19 +20,9 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  await supabase.auth.signOut();
 
-  if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 401 }
-    );
-  }
-
-  const response = NextResponse.json({ success: true, user: data.user });
+  const response = NextResponse.redirect(new URL('/admin/login', request.url));
 
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options);
