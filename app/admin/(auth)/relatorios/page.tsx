@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { format, startOfDay, endOfDay, parseISO, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -11,9 +11,9 @@ export default async function RelatoriosPage({
 }: {
   searchParams: Promise<{ periodo?: string; data?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/admin/login');
+  const admin = await requireAdmin();
+  if ('error' in admin) redirect('/admin/login');
+  const { supabase } = admin;
 
   const params = await searchParams;
   const periodo = params.periodo || '7dias';

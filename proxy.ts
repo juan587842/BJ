@@ -6,9 +6,7 @@ export async function proxy(request: NextRequest) {
 
   const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin/login');
 
-  if (!isAdminRoute) {
-    return NextResponse.next();
-  }
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +19,7 @@ export async function proxy(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
           });
         },
       },
@@ -29,13 +28,13 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (isAdminRoute && !user) {
     const loginUrl = new URL('/admin/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    response = NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

@@ -5,11 +5,17 @@ import { consultarCheckout, type SumupMode } from '@/lib/sumup/client';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * Webhook SumUp: recebe notificação de mudança de status de checkout
- * e atualiza o pedido OU a impressão. Consulta a API SumUp como fonte da verdade.
- */
 export async function POST(req: NextRequest) {
+  const webhookSecret = process.env.SUMUP_WEBHOOK_SECRET;
+  const headerSecret = req.headers.get('x-webhook-secret');
+  if (webhookSecret) {
+    if (headerSecret !== webhookSecret) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+  } else if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
   const contentType = req.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
     return NextResponse.json({ error: 'invalid content type' }, { status: 400 });

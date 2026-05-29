@@ -1,12 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 
 export async function marcarImpressaoPaga(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('impressoes')
@@ -20,9 +20,9 @@ export async function marcarImpressaoPaga(id: string) {
 }
 
 export async function iniciarProducaoImpressao(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('impressoes')
@@ -36,9 +36,9 @@ export async function iniciarProducaoImpressao(id: string) {
 }
 
 export async function concluirImpressao(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('impressoes')
@@ -52,9 +52,9 @@ export async function concluirImpressao(id: string) {
 }
 
 export async function cancelarImpressao(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('impressoes')
@@ -68,9 +68,9 @@ export async function cancelarImpressao(id: string) {
 }
 
 export async function obterUrlArquivoImpressao(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false as const, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false as const, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { data: imp, error } = await supabase
     .from('impressoes')

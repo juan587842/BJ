@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { consultarCheckout, type SumupMode } from '@/lib/sumup/client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * Sincroniza o status do pedido com o SumUp sob demanda.
- * Usado pela página de retorno do cliente quando o webhook pode ainda
- * não ter chegado.
- */
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
   const body = await req.json().catch(() => ({}));
   const pedido_id = body.pedido_id;
   const impressao_id = body.impressao_id;
 
   const admin = await createAdminClient();
 
-  // Sync impressao
   if (impressao_id && typeof impressao_id === 'string') {
-    const { data: imp } = await admin
+    const { data: imp } = await supabase
       .from('impressoes')
       .select('id, status, sumup_checkout_id, sumup_modo')
       .eq('id', impressao_id)
@@ -59,12 +59,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: imp.status });
   }
 
-  // Sync pedido
   if (!pedido_id || typeof pedido_id !== 'string') {
     return NextResponse.json({ error: 'missing pedido_id or impressao_id' }, { status: 400 });
   }
 
-  const { data: pedido } = await admin
+  const { data: pedido } = await supabase
     .from('pedidos')
     .select('id, status, sumup_checkout_id, sumup_modo')
     .eq('id', pedido_id)

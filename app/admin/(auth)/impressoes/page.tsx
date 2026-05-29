@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import ImpressoesClient from './ImpressoesClient';
 import type { Impressao, TipoImpressao } from '@/types';
@@ -6,9 +6,9 @@ import type { Impressao, TipoImpressao } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default async function ImpressoesAdminPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/admin/login');
+  const admin = await requireAdmin();
+  if ('error' in admin) redirect('/admin/login');
+  const { supabase } = admin;
 
   let impressoes = null;
   try {

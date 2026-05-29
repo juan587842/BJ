@@ -1,15 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 
 export async function atualizarModoCatalogo(modo: 'copa' | 'catalogo') {
-  const supabase = await createClient();
-
-  const { error: authError, data: { user } } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('site_config')
@@ -32,10 +29,9 @@ export interface PedidosConfigInput {
 }
 
 export async function atualizarConfigPedidos(input: PedidosConfigInput) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('site_config')
@@ -63,9 +59,9 @@ export interface ImpressoesConfigInput {
 }
 
 export async function atualizarConfigImpressoes(input: ImpressoesConfigInput) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   if (
     !Number.isInteger(input.impressao_preco_pb_centavos) ||
@@ -101,9 +97,9 @@ export interface TipoImpressaoInput {
 }
 
 export async function criarTipoImpressao(input: TipoImpressaoInput) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   if (!input.nome?.trim()) return { success: false, error: 'Nome obrigatório.' };
 
@@ -121,9 +117,9 @@ export async function criarTipoImpressao(input: TipoImpressaoInput) {
 }
 
 export async function atualizarTipoImpressao(id: string, input: TipoImpressaoInput) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   if (!input.nome?.trim()) return { success: false, error: 'Nome obrigatório.' };
 
@@ -144,9 +140,9 @@ export async function atualizarTipoImpressao(id: string, input: TipoImpressaoInp
 }
 
 export async function deletarTipoImpressao(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase.from('tipos_impressao').delete().eq('id', id);
 

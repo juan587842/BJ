@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import ConfiguracoesClient from './ConfiguracoesClient';
 import type { SiteConfig, TipoImpressao } from '@/types';
@@ -6,10 +6,9 @@ import type { SiteConfig, TipoImpressao } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default async function ConfiguracoesPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/admin/login');
+  const admin = await requireAdmin();
+  if ('error' in admin) redirect('/admin/login');
+  const { supabase } = admin;
 
   let data = null;
   try {

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import ImpressaoStatusClient from './ImpressaoStatusClient';
 import type { Impressao } from '@/types';
 
@@ -11,9 +11,9 @@ interface Props {
 
 export default async function ImpressaoStatusPage({ params }: Props) {
   const { id } = await params;
-  const admin = await createAdminClient();
+  const supabase = await createClient();
 
-  const { data: impressao } = await admin
+  const { data: impressao } = await supabase
     .from('impressoes')
     .select('id, numero, status, total_centavos, modo_cor, quantidade_folhas, tipo_impressao_nome, tipo_pagamento, cliente_nome, sumup_checkout_id')
     .eq('id', id)

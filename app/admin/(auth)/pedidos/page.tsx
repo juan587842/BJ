@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import PedidosClient from './PedidosClient';
 import type { Pedido, PedidoItem } from '@/types';
@@ -6,10 +6,9 @@ import type { Pedido, PedidoItem } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default async function PedidosPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/admin/login');
+  const admin = await requireAdmin();
+  if ('error' in admin) redirect('/admin/login');
+  const { supabase } = admin;
 
   let pedidos = null;
   try {

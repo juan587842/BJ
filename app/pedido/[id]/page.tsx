@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import PedidoStatusClient, { type PedidoView } from './PedidoStatusClient';
 
 export const dynamic = 'force-dynamic';
@@ -10,11 +10,11 @@ interface Props {
 
 export default async function PedidoStatusPage({ params }: Props) {
   const { id } = await params;
-  const admin = await createAdminClient();
+  const supabase = await createClient();
 
   let pedido = null;
   try {
-    const { data: rawData, error } = await admin
+    const { data: rawData, error } = await supabase
       .from('pedidos')
       .select('id, numero, status, total_centavos, tipo_pagamento, sumup_checkout_id, cliente_nome')
       .eq('id', id)

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { format, startOfMonth, endOfMonth, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -6,9 +6,9 @@ import { ShoppingCart, DollarSign, Package, AlertTriangle, TrendingUp, CalendarD
 import DashboardChart from '@/components/admin/DashboardChart';
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/admin/login');
+  const admin = await requireAdmin();
+  if ('error' in admin) redirect('/admin/login');
+  const { supabase } = admin;
 
   const agora = new Date();
   const inicioMes = startOfMonth(agora).toISOString();

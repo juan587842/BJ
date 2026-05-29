@@ -1,12 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 
 export async function confirmarPedido(pedidoId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   // RPC faz: valida estoque → baixa estoque → marca como confirmado (transacional)
   const { error } = await supabase.rpc('confirmar_pedido', {
@@ -22,9 +22,9 @@ export async function confirmarPedido(pedidoId: string) {
 }
 
 export async function cancelarPedido(pedidoId: string, motivo?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   // RPC atômica: valida status, devolve estoque (se confirmado), marca cancelado.
   const { error } = await supabase.rpc('cancelar_pedido', {
@@ -41,9 +41,9 @@ export async function cancelarPedido(pedidoId: string, motivo?: string) {
 }
 
 export async function marcarComoPago(pedidoId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('pedidos')
@@ -57,9 +57,9 @@ export async function marcarComoPago(pedidoId: string) {
 }
 
 export async function concluirPedido(pedidoId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autorizado.' };
+  const admin = await requireAdmin();
+  if ('error' in admin) return { success: false, error: 'Não autorizado.' };
+  const { supabase } = admin;
 
   const { error } = await supabase
     .from('pedidos')
