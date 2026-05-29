@@ -2,12 +2,9 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isLoginPage = pathname === '/admin/login';
-
-  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
-  const headersToSet: [string, string][] = [];
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,41 +14,46 @@ export async function proxy(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookies, headers) {
-          cookiesToSet.push(...cookies);
-          cookies.forEach(({ name, value }) => request.cookies.set(name, value));
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
           if (headers) {
-            Object.entries(headers).forEach(([key, value]) => headersToSet.push([key, value]));
+            Object.entries(headers).forEach(([key, value]) =>
+              supabaseResponse.headers.set(key, value)
+            );
           }
         },
       },
     }
   );
 
-  let user = null;
-  try {
-    ({ data: { user } } = await supabase.auth.getUser());
-  } catch (e) {
-    console.error('[proxy] getUser failed:', e);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
+  const isLoginPage = request.nextUrl.pathname === '/admin/login';
+
+  if (!user && isAdminRoute && !isLoginPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin/login';
+    return NextResponse.redirect(url);
   }
 
-  const applyCookiesAndHeaders = (res: NextResponse) => {
-    cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
-    headersToSet.forEach(([key, value]) => res.headers.set(key, value));
-    return res;
-  };
-
-  if (isLoginPage && user) {
-    return applyCookiesAndHeaders(NextResponse.redirect(new URL('/admin/dashboard', request.url)));
+  if (user && isLoginPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin/dashboard';
+    return NextResponse.redirect(url);
   }
 
-  if (!isLoginPage && !user) {
-    const loginUrl = new URL('/admin/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return applyCookiesAndHeaders(NextResponse.redirect(loginUrl));
-  }
-
-  return applyCookiesAndHeaders(NextResponse.next({ request }));
+  return supabaseResponse;
 }
 
 export const config = {

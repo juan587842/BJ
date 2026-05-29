@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Store, ArrowRight, AlertCircle, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '@/components/shared/ThemeProviderClient';
 
@@ -22,24 +23,22 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+    const supabase = createClient();
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
     setLoading(false);
 
-    const result = await res.json();
-
-    if (!res.ok) {
-      setError(result.error || 'Erro ao fazer login');
+    if (authError) {
+      setError(authError.message);
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const redirectTo = params.get('redirect') || '/admin/dashboard';
-    window.location.href = redirectTo;
+    if (data.session) {
+      window.location.href = '/admin/dashboard';
+    }
   };
 
   return (

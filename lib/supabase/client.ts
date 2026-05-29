@@ -2,23 +2,29 @@ import { createBrowserClient, parse, serialize } from '@supabase/ssr';
 import type { Database } from '@/types';
 
 export function createClient() {
-  return createBrowserClient<Database, 'public'>(
+  return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          if (typeof window === 'undefined') return [];
-          const cookies = parse(document.cookie);
-          return Object.entries(cookies).map(([name, value]) => ({ name, value: value ?? '' }));
+        get(name) {
+          if (typeof window === 'undefined') return undefined;
+          const cookie = parse(document.cookie);
+          return cookie[name];
         },
-        setAll(cookiesToSet) {
+        set(name, value, options) {
           if (typeof window === 'undefined') return;
-          cookiesToSet.forEach(({ name, value, options }) => {
-            document.cookie = serialize(name, value, {
-              ...options,
-              path: '/',
-            });
+          document.cookie = serialize(name, value, {
+            ...options,
+            path: '/',
+          });
+        },
+        remove(name, options) {
+          if (typeof window === 'undefined') return;
+          document.cookie = serialize(name, '', {
+            ...options,
+            path: '/',
+            maxAge: 0,
           });
         },
       },

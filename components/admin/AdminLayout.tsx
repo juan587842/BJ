@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { LogOut, LayoutDashboard, ShoppingCart, Package, FolderOpen, BarChart3, Menu, X, Store, Clock, Sun, Moon, Settings, ShoppingBag, Handshake, Truck, FileText, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { useTheme } from '@/components/shared/ThemeProviderClient';
 
 const navItems = [
@@ -45,11 +45,11 @@ function ThemeToggle() {
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    const supabase = createClient();
+    await supabase.auth.signOut();
     window.location.href = '/admin/login';
   };
 

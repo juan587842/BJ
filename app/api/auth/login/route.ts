@@ -1,8 +1,7 @@
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   const { email, password } = await request.json();
 
   if (!email || !password) {
@@ -12,26 +11,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
-  const headersToSet: [string, string][] = [];
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookies, headers) {
-          cookiesToSet.push(...cookies);
-          if (headers) {
-            Object.entries(headers).forEach(([key, value]) => headersToSet.push([key, value]));
-          }
-        },
-      },
-    }
-  );
+  const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -45,14 +25,5 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const response = NextResponse.json({ success: true, user: data.user });
-
-  cookiesToSet.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options);
-  });
-  headersToSet.forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
-
-  return response;
+  return NextResponse.json({ success: true, user: data.user });
 }
