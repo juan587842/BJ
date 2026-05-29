@@ -1,14 +1,11 @@
-import { requireAdmin } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { format, startOfMonth, endOfMonth, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ShoppingCart, DollarSign, Package, AlertTriangle, TrendingUp, CalendarDays, ArrowUpRight, Clock } from 'lucide-react';
 import DashboardChart from '@/components/admin/DashboardChart';
 
 export default async function DashboardPage() {
-  const admin = await requireAdmin();
-  if ('error' in admin) redirect('/admin/login');
-  const { supabase } = admin;
+  const supabase = await createClient();
 
   const agora = new Date();
   const inicioMes = startOfMonth(agora).toISOString();

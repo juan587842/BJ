@@ -1,5 +1,4 @@
-import { requireAdmin } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ShoppingCart, DollarSign, Package, TrendingUp, Calendar, ChevronDown } from 'lucide-react';
@@ -11,9 +10,7 @@ export default async function HistoricoPage({
 }: {
   searchParams: Promise<{ periodo?: string; inicio?: string; fim?: string; venda?: string }>;
 }) {
-  const admin = await requireAdmin();
-  if ('error' in admin) redirect('/admin/login');
-  const { supabase } = admin;
+  const supabase = await createClient();
 
   const params = await searchParams;
   const periodo = params.periodo || '7';

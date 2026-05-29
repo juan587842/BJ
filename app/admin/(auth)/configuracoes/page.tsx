@@ -1,14 +1,11 @@
-import { requireAdmin } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import ConfiguracoesClient from './ConfiguracoesClient';
 import type { SiteConfig, TipoImpressao } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ConfiguracoesPage() {
-  const admin = await requireAdmin();
-  if ('error' in admin) redirect('/admin/login');
-  const { supabase } = admin;
+  const supabase = await createClient();
 
   let data = null;
   try {

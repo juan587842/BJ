@@ -47,12 +47,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/admin/dashboard';
-    return NextResponse.redirect(url);
-  }
-
   return supabaseResponse;
 }
 
