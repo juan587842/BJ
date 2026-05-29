@@ -6,47 +6,63 @@ export async function proxy(request: NextRequest) {
 
   const isLoginPage = pathname === '/admin/login';
 
-  let response = NextResponse.next({ request });
+  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = [];
 
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              request.cookies.set(name, value);
-              response.cookies.set(name, value, options);
-            });
-          },
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
         },
-      }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (isLoginPage && user) {
-      response = NextResponse.redirect(new URL('/admin/dashboard', request.url));
+        setAll(cookies) {
+          cookiesToSet.push(...cookies);
+          cookies.forEach(({ name, value }) => request.cookies.set(name, value));
+        },
+      },
     }
+  );
 
-    if (!isLoginPage && !user) {
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      response = NextResponse.redirect(loginUrl);
-    }
-  } catch {
-    if (!isLoginPage) {
-      response = NextResponse.redirect(new URL('/admin/login', request.url));
-    }
+  let user = null;
+  try {
+    ({ data: { user } } = await supabase.auth.getUser());
+  } catch {}
+
+  if (isLoginPage && user) {
+    const res = NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+    return res;
   }
 
-  return response;
+  if (!isLoginPage && !user) {
+    const loginUrl = new URL('/admin/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    const res = NextResponse.redirect(loginUrl);
+    cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+    return res;
+  }
+
+  const res = NextResponse.next({ request });
+  cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+  return res;
 }
 
 export const config = {
-  matcher: ['/admin/:path((?!login|api|_next).*)', '/admin/login'],
+  matcher: [
+    '/admin/login',
+    '/admin/dashboard',
+    '/admin/caixa',
+    '/admin/pedidos',
+    '/admin/impressoes',
+    '/admin/estoque',
+    '/admin/comissionados',
+    '/admin/comissionados/:path*',
+    '/admin/fornecedores',
+    '/admin/categorias',
+    '/admin/historico',
+    '/admin/relatorios',
+    '/admin/curriculo',
+    '/admin/configuracoes',
+  ],
 };
