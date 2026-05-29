@@ -12,13 +12,19 @@ export default async function ProdutoDetalhePage({
   const supabase = await createClient();
   const { id } = await params;
 
-  const { data: produto } = await supabase
-    .from('produtos')
-    .select('*, categoria:categorias(nome, icone)')
-    .eq('id', id)
-    .eq('ativo', true)
-    .gt('quantidade', 0)
-    .single();
+  let produto = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('produtos')
+      .select('*, categoria:categorias(nome, icone)')
+      .eq('id', id)
+      .eq('ativo', true)
+      .gt('quantidade', 0)
+      .single();
+    if (!error) produto = rawData;
+  } catch (e) {
+    console.error('[ProdutoDetalhePage]', e);
+  }
 
   if (!produto) notFound();
 

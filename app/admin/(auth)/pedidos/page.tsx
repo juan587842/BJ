@@ -11,11 +11,17 @@ export default async function PedidosPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/admin/login');
 
-  const { data: pedidos } = await supabase
-    .from('pedidos')
-    .select('*, itens:pedido_itens(*)')
-    .order('created_at', { ascending: false })
-    .limit(200);
+  let pedidos = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('pedidos')
+      .select('*, itens:pedido_itens(*)')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (!error) pedidos = rawData;
+  } catch (e) {
+    console.error('[PedidosPage]', e);
+  }
 
   return <PedidosClient pedidos={(pedidos as (Pedido & { itens: PedidoItem[] })[]) || []} />;
 }

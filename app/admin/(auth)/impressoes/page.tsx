@@ -10,15 +10,27 @@ export default async function ImpressoesAdminPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/admin/login');
 
-  const { data: impressoes } = await supabase
-    .from('impressoes')
-    .select('*')
-    .order('created_at', { ascending: true });
+  let impressoes = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('impressoes')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (!error) impressoes = rawData;
+  } catch (e) {
+    console.error('[ImpressoesAdminPage]', e);
+  }
 
-  const { data: tipos } = await supabase
-    .from('tipos_impressao')
-    .select('*')
-    .order('ordem', { ascending: true });
+  let tipos = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('tipos_impressao')
+      .select('*')
+      .order('ordem', { ascending: true });
+    if (!error) tipos = rawData;
+  } catch (e) {
+    console.error('[ImpressoesAdminPage]', e);
+  }
 
   return (
     <ImpressoesClient

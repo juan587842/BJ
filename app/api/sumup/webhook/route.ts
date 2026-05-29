@@ -10,15 +10,20 @@ export const dynamic = 'force-dynamic';
  * e atualiza o pedido OU a impressão. Consulta a API SumUp como fonte da verdade.
  */
 export async function POST(req: NextRequest) {
-  let payload: any;
+  const contentType = req.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    return NextResponse.json({ error: 'invalid content type' }, { status: 400 });
+  }
+
+  let payload: Record<string, unknown>;
   try {
     payload = await req.json();
   } catch {
     return NextResponse.json({ error: 'invalid json' }, { status: 400 });
   }
 
-  const checkoutId: string | undefined = payload?.id ?? payload?.checkout_id ?? payload?.resource_id;
-  if (!checkoutId) {
+  const checkoutId = payload?.id ?? payload?.checkout_id ?? payload?.resource_id;
+  if (!checkoutId || typeof checkoutId !== 'string') {
     return NextResponse.json({ error: 'missing checkout id' }, { status: 400 });
   }
 
@@ -32,20 +37,20 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (pedido) {
-    const modo: SumupMode = ((pedido as any).sumup_modo as SumupMode) ?? 'sandbox';
+    const modo: SumupMode = (pedido.sumup_modo as SumupMode) ?? 'sandbox';
     const status = await consultarCheckout(modo, checkoutId);
     if (!status) {
       return NextResponse.json({ error: 'sumup query failed' }, { status: 502 });
     }
 
-    if (status.status === 'PAID' && (pedido as any).status === 'pendente') {
+    if (status.status === 'PAID' && pedido.status === 'pendente') {
       const { error } = await admin
         .from('pedidos')
         .update({
           status: 'pago',
           sumup_transaction_id: status.transactionId ?? status.transactionCode ?? null,
         })
-        .eq('id', (pedido as any).id)
+        .eq('id', pedido.id)
         .eq('status', 'pendente');
 
       if (error) {
@@ -54,12 +59,12 @@ export async function POST(req: NextRequest) {
       }
     } else if (
       (status.status === 'FAILED' || status.status === 'EXPIRED') &&
-      (pedido as any).status === 'pendente'
+      pedido.status === 'pendente'
     ) {
       await admin
         .from('pedidos')
         .update({ status: 'cancelado', cancelado_em: new Date().toISOString() })
-        .eq('id', (pedido as any).id)
+        .eq('id', pedido.id)
         .eq('status', 'pendente');
     }
 
@@ -74,13 +79,13 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (impressao) {
-    const modo: SumupMode = ((impressao as any).sumup_modo as SumupMode) ?? 'sandbox';
+    const modo: SumupMode = (impressao.sumup_modo as SumupMode) ?? 'sandbox';
     const status = await consultarCheckout(modo, checkoutId);
     if (!status) {
       return NextResponse.json({ error: 'sumup query failed' }, { status: 502 });
     }
 
-    if (status.status === 'PAID' && (impressao as any).status === 'pendente') {
+    if (status.status === 'PAID' && impressao.status === 'pendente') {
       const { error } = await admin
         .from('impressoes')
         .update({
@@ -88,7 +93,7 @@ export async function POST(req: NextRequest) {
           pago_em: new Date().toISOString(),
           sumup_transaction_id: status.transactionId ?? status.transactionCode ?? null,
         })
-        .eq('id', (impressao as any).id)
+        .eq('id', impressao.id)
         .eq('status', 'pendente');
 
       if (error) {
@@ -97,12 +102,12 @@ export async function POST(req: NextRequest) {
       }
     } else if (
       (status.status === 'FAILED' || status.status === 'EXPIRED') &&
-      (impressao as any).status === 'pendente'
+      impressao.status === 'pendente'
     ) {
       await admin
         .from('impressoes')
         .update({ status: 'cancelado', cancelado_em: new Date().toISOString() })
-        .eq('id', (impressao as any).id)
+        .eq('id', impressao.id)
         .eq('status', 'pendente');
     }
 
@@ -110,8 +115,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ error: 'pedido/impressao not found' }, { status: 404 });
-}
-
-export async function GET() {
-  return NextResponse.json({ ok: true });
 }

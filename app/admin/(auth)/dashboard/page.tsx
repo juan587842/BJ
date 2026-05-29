@@ -15,24 +15,33 @@ export default async function DashboardPage() {
   const fimMes = endOfMonth(agora).toISOString();
   const hojeStr = startOfDay(agora).toISOString();
 
-  // Dados do mês
-  const [{ data: vendasMes }, { data: estoqueBaixo }, { data: categorias }] = await Promise.all([
-    supabase
-      .from('vendas')
-      .select('*')
-      .gte('created_at', inicioMes)
-      .lte('created_at', fimMes)
-      .order('created_at', { ascending: true }),
-    supabase
-      .from('produtos')
-      .select('id, nome, quantidade, quantidade_minima')
-      .order('quantidade', { ascending: true })
-      .limit(10),
-    supabase
-      .from('categorias')
-      .select('id, nome')
-      .order('nome'),
-  ]);
+  let vendasMes = null;
+  let estoqueBaixo = null;
+  let categorias = null;
+  try {
+    const [vendasResult, estoqueResult, categoriasResult] = await Promise.all([
+      supabase
+        .from('vendas')
+        .select('*')
+        .gte('created_at', inicioMes)
+        .lte('created_at', fimMes)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('produtos')
+        .select('id, nome, quantidade, quantidade_minima')
+        .order('quantidade', { ascending: true })
+        .limit(10),
+      supabase
+        .from('categorias')
+        .select('id, nome')
+        .order('nome'),
+    ]);
+    if (!vendasResult.error) vendasMes = vendasResult.data;
+    if (!estoqueResult.error) estoqueBaixo = estoqueResult.data;
+    if (!categoriasResult.error) categorias = categoriasResult.data;
+  } catch (e) {
+    console.error('[DashboardPage]', e);
+  }
 
   // Vendas recentes (últimas 5)
   const vendasRecentes = (vendasMes as any[])
@@ -67,12 +76,17 @@ export default async function DashboardPage() {
   // Dia com mais vendas
   const diaPico = chartData.reduce((max: any, d: any) => d.valor > max.valor ? d : max, chartData[0] || { dia: '—', valor: 0 });
 
-  // Top 5 produtos do mês
-  const { data: itensMes } = await supabase
-    .from('venda_itens')
-    .select(`quantidade, preco_unitario, produto:produtos(nome), vendas!inner(created_at)`)
-    .gte('vendas.created_at', inicioMes)
-    .lte('vendas.created_at', fimMes);
+  let itensMes = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('venda_itens')
+      .select(`quantidade, preco_unitario, produto:produtos(nome), vendas!inner(created_at)`)
+      .gte('vendas.created_at', inicioMes)
+      .lte('vendas.created_at', fimMes);
+    if (!error) itensMes = rawData;
+  } catch (e) {
+    console.error('[DashboardPage]', e);
+  }
 
   const produtosMaisVendidos: Record<string, { nome: string; qtd: number; total: number }> = {};
   (itensMes as any[])?.forEach((item: any) => {

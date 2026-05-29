@@ -10,11 +10,17 @@ export const dynamic = 'force-dynamic';
 export default async function ImpressoesPage() {
   const supabase = await createClient();
 
-  const { data: configData } = await supabase
-    .from('site_config')
-    .select('*')
-    .eq('id', 1)
-    .single();
+  let configData = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('site_config')
+      .select('*')
+      .eq('id', 1)
+      .single();
+    if (!error) configData = rawData;
+  } catch (e) {
+    console.error('[ImpressoesPage]', e);
+  }
 
   const config = (configData as SiteConfig | null) ?? {
     impressoes_ativa: true,
@@ -25,12 +31,18 @@ export default async function ImpressoesPage() {
     sumup_modo: 'sandbox',
   } as SiteConfig;
 
-  const { data: tiposData } = await supabase
-    .from('tipos_impressao')
-    .select('*')
-    .eq('ativo', true)
-    .order('ordem', { ascending: true })
-    .order('nome', { ascending: true });
+  let tiposData = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('tipos_impressao')
+      .select('*')
+      .eq('ativo', true)
+      .order('ordem', { ascending: true })
+      .order('nome', { ascending: true });
+    if (!error) tiposData = rawData;
+  } catch (e) {
+    console.error('[ImpressoesPage]', e);
+  }
 
   let tipos = (tiposData as TipoImpressao[] | null) ?? [];
 

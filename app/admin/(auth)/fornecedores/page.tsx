@@ -15,6 +15,7 @@ export default function FornecedoresPage() {
   const [contato, setContato] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const fetch = async () => {
     const { data } = await supabase.from('fornecedores').select('*').order('nome');
@@ -48,8 +49,16 @@ export default function FornecedoresPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir este fornecedor? Não será possível se houver consignações vinculadas.')) return;
+    setDeleteError('');
     const { error } = await supabase.from('fornecedores').delete().eq('id', id);
-    if (error) alert(error.message);
+    if (error) {
+      if (error.code === '23503') {
+        setDeleteError('Não é possível excluir este fornecedor pois existem consignações vinculadas.');
+      } else {
+        setDeleteError('Erro ao excluir fornecedor.');
+      }
+      return;
+    }
     fetch();
   };
 
@@ -64,6 +73,13 @@ export default function FornecedoresPage() {
           <Plus className="w-4 h-4" /> Novo Fornecedor
         </button>
       </div>
+
+      {deleteError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 flex items-center justify-between">
+          <span>{deleteError}</span>
+          <button onClick={() => setDeleteError('')} className="text-red-500 hover:text-red-700 dark:hover:text-red-300 ml-2">&times;</button>
+        </div>
+      )}
 
       <div className="card">
         {fornecedores.length === 0 ? (

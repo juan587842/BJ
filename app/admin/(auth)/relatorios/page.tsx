@@ -53,28 +53,33 @@ export default async function RelatoriosPage({
   const inicioDia = inicio.toISOString();
   const fimDia = fim.toISOString();
 
-  const [vendasResult, itensResult] = await Promise.all([
-    supabase
-      .from('vendas')
-      .select('*, forma_pagamento:formas_pagamento(nome, icone)')
-      .gte('created_at', inicioDia)
-      .lte('created_at', fimDia)
-      .order('created_at', { ascending: true }),
-    supabase
-      .from('venda_itens')
-      .select(`
-        quantidade,
-        preco_unitario,
-        produto:produtos(nome),
-        vendas!inner(created_at)
-      `)
-      .gte('vendas.created_at', inicioDia)
-      .lte('vendas.created_at', fimDia)
-      .order('quantidade', { ascending: false }),
-  ]);
-
-  const vendas = vendasResult.data;
-  const itensVendidos = itensResult.data;
+  let vendas = null;
+  let itensVendidos = null;
+  try {
+    const [vendasResult, itensResult] = await Promise.all([
+      supabase
+        .from('vendas')
+        .select('*, forma_pagamento:formas_pagamento(nome, icone)')
+        .gte('created_at', inicioDia)
+        .lte('created_at', fimDia)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('venda_itens')
+        .select(`
+          quantidade,
+          preco_unitario,
+          produto:produtos(nome),
+          vendas!inner(created_at)
+        `)
+        .gte('vendas.created_at', inicioDia)
+        .lte('vendas.created_at', fimDia)
+        .order('quantidade', { ascending: false }),
+    ]);
+    if (!vendasResult.error) vendas = vendasResult.data;
+    if (!itensResult.error) itensVendidos = itensResult.data;
+  } catch (e) {
+    console.error('[RelatoriosPage]', e);
+  }
 
   const vendasTyped = (vendas as any[]) || [];
   const totalVendas = vendasTyped.reduce((acc, v) => acc + Number(v.total), 0);

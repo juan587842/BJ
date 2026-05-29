@@ -49,13 +49,13 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
     .eq('id', 1)
     .single();
 
-  if (!config || !(config as any).impressoes_ativa) {
+  if (!config || !config.impressoes_ativa) {
     return { success: false, error: 'Serviço de impressões está desativado.' };
   }
-  if (input.tipo_pagamento === 'online' && !(config as any).pagamento_online_ativo) {
+  if (input.tipo_pagamento === 'online' && !config.pagamento_online_ativo) {
     return { success: false, error: 'Pagamento online está desativado.' };
   }
-  if (input.tipo_pagamento === 'retirada_local' && !(config as any).retirada_local_ativa) {
+  if (input.tipo_pagamento === 'retirada_local' && !config.retirada_local_ativa) {
     return { success: false, error: 'Retirada no local está desativada.' };
   }
 
@@ -74,17 +74,17 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
       .eq('id', input.tipo_impressao_id)
       .single();
 
-    if (tipoErr || !tipo || !(tipo as any).ativo) {
+    if (tipoErr || !tipo || !tipo.ativo) {
       return { success: false, error: 'Tipo de impressão indisponível.' };
     }
-    tipoId = (tipo as any).id;
-    tipoNome = (tipo as any).nome;
+    tipoId = tipo.id;
+    tipoNome = tipo.nome;
   }
 
   // Preço (server-side)
   const precoUnitario = input.modo_cor === 'pb'
-    ? (config as any).impressao_preco_pb_centavos
-    : (config as any).impressao_preco_colorida_centavos;
+    ? config.impressao_preco_pb_centavos
+    : config.impressao_preco_colorida_centavos;
   const total = precoUnitario * input.quantidade_folhas;
 
   // Cliente: upsert por whatsapp
@@ -107,7 +107,7 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
     return { success: false, error: 'Erro ao registrar cliente.' };
   }
 
-  const modoSumup: SumupMode = ((config as any).sumup_modo as SumupMode) ?? 'sandbox';
+  const modoSumup: SumupMode = (config.sumup_modo as SumupMode) ?? 'sandbox';
 
   // Insert impressão
   const { data: impressao, error: impErr } = await admin
@@ -143,12 +143,12 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
   if (input.tipo_pagamento === 'online') {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
-      const returnUrl = siteUrl ? `${siteUrl}/impressao/${(impressao as any).id}` : undefined;
-      const checkout = await criarCheckout(modoSumup, {
-        pedidoId: (impressao as any).id,
-        pedidoNumero: (impressao as any).numero,
-        valorCentavos: total,
-        descricao: `Banca do Jonas — Impressão #${String((impressao as any).numero).padStart(4, '0')}`,
+        const returnUrl = siteUrl ? `${siteUrl}/impressao/${impressao.id}` : undefined;
+        const checkout = await criarCheckout(modoSumup, {
+          pedidoId: impressao.id,
+          pedidoNumero: impressao.numero,
+          valorCentavos: total,
+          descricao: `Banca do Jonas — Impressão #${String(impressao.numero).padStart(4, '0')}`,
         clienteEmail: input.cliente.email ?? null,
         returnUrl,
       });
@@ -157,7 +157,7 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
         await admin
           .from('impressoes')
           .update({ sumup_checkout_id: checkout.checkoutId })
-          .eq('id', (impressao as any).id);
+          .eq('id', impressao.id);
       }
     } catch (e) {
       console.error('[impressao] erro SumUp:', e);
@@ -166,8 +166,8 @@ export async function criarImpressao(input: ImpressaoInput): Promise<ImpressaoRe
 
   return {
     success: true,
-    impressao_id: (impressao as any).id,
-    impressao_numero: (impressao as any).numero,
+    impressao_id: impressao.id,
+    impressao_numero: impressao.numero,
     checkout_url: checkoutUrl,
   };
 }

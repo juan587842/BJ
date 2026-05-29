@@ -10,7 +10,7 @@ export async function marcarImpressaoPaga(id: string) {
 
   const { error } = await supabase
     .from('impressoes')
-    .update({ status: 'pago', pago_em: new Date().toISOString() } as any)
+    .update({ status: 'pago', pago_em: new Date().toISOString() })
     .eq('id', id)
     .eq('status', 'pendente');
 
@@ -26,7 +26,7 @@ export async function iniciarProducaoImpressao(id: string) {
 
   const { error } = await supabase
     .from('impressoes')
-    .update({ status: 'em_producao' } as any)
+    .update({ status: 'em_producao' })
     .eq('id', id)
     .in('status', ['pendente', 'pago']);
 
@@ -42,7 +42,7 @@ export async function concluirImpressao(id: string) {
 
   const { error } = await supabase
     .from('impressoes')
-    .update({ status: 'concluido', concluido_em: new Date().toISOString() } as any)
+    .update({ status: 'concluido', concluido_em: new Date().toISOString() })
     .eq('id', id)
     .in('status', ['em_producao', 'pago', 'pendente']);
 
@@ -58,7 +58,7 @@ export async function cancelarImpressao(id: string) {
 
   const { error } = await supabase
     .from('impressoes')
-    .update({ status: 'cancelado', cancelado_em: new Date().toISOString() } as any)
+    .update({ status: 'cancelado', cancelado_em: new Date().toISOString() })
     .eq('id', id)
     .not('status', 'in', '(concluido,cancelado)');
 
@@ -82,7 +82,7 @@ export async function obterUrlArquivoImpressao(id: string) {
 
   const { data: signed, error: sErr } = await supabase.storage
     .from('impressoes')
-    .createSignedUrl((imp as any).arquivo_path, 300);
+    .createSignedUrl(imp.arquivo_path, 300);
 
   if (sErr || !signed) return { success: false as const, error: 'Erro ao gerar URL.' };
 

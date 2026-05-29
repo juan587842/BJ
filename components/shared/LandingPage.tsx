@@ -31,7 +31,6 @@ interface Props {
   produtos: Produto[];
   categorias: Categoria[];
   pedidosConfig?: PedidosConfig;
-  impressoesAtiva?: boolean;
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -287,7 +286,7 @@ function Faq() {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function LandingPage({ produtos, categorias, pedidosConfig, impressoesAtiva }: Props) {
+export default function LandingPage({ produtos, categorias, pedidosConfig }: Props) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);

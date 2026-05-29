@@ -11,12 +11,59 @@ export const dynamic = 'force-dynamic';
  * não ter chegado.
  */
 export async function POST(req: NextRequest) {
-  const { pedido_id } = await req.json().catch(() => ({}));
-  if (!pedido_id || typeof pedido_id !== 'string') {
-    return NextResponse.json({ error: 'missing pedido_id' }, { status: 400 });
-  }
+  const body = await req.json().catch(() => ({}));
+  const pedido_id = body.pedido_id;
+  const impressao_id = body.impressao_id;
 
   const admin = await createAdminClient();
+
+  // Sync impressao
+  if (impressao_id && typeof impressao_id === 'string') {
+    const { data: imp } = await admin
+      .from('impressoes')
+      .select('id, status, sumup_checkout_id, sumup_modo')
+      .eq('id', impressao_id)
+      .maybeSingle();
+
+    if (!imp) return NextResponse.json({ error: 'not found' }, { status: 404 });
+    if (!imp.sumup_checkout_id || imp.status !== 'pendente') {
+      return NextResponse.json({ status: imp.status });
+    }
+
+    const modo: SumupMode = (imp.sumup_modo as SumupMode) ?? 'sandbox';
+    const sumup = await consultarCheckout(modo, imp.sumup_checkout_id);
+    if (!sumup) return NextResponse.json({ status: imp.status });
+
+    if (sumup.status === 'PAID') {
+      await admin
+        .from('impressoes')
+        .update({
+          status: 'pago',
+          pago_em: new Date().toISOString(),
+          sumup_transaction_id: sumup.transactionId ?? sumup.transactionCode ?? null,
+        })
+        .eq('id', imp.id)
+        .eq('status', 'pendente');
+      return NextResponse.json({ status: 'pago' });
+    }
+
+    if (sumup.status === 'FAILED' || sumup.status === 'EXPIRED') {
+      await admin
+        .from('impressoes')
+        .update({ status: 'cancelado', cancelado_em: new Date().toISOString() })
+        .eq('id', imp.id)
+        .eq('status', 'pendente');
+      return NextResponse.json({ status: 'cancelado' });
+    }
+
+    return NextResponse.json({ status: imp.status });
+  }
+
+  // Sync pedido
+  if (!pedido_id || typeof pedido_id !== 'string') {
+    return NextResponse.json({ error: 'missing pedido_id or impressao_id' }, { status: 400 });
+  }
+
   const { data: pedido } = await admin
     .from('pedidos')
     .select('id, status, sumup_checkout_id, sumup_modo')

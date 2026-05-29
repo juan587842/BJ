@@ -11,11 +11,17 @@ export default async function ConfiguracoesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/admin/login');
 
-  const { data } = await supabase
-    .from('site_config')
-    .select('*')
-    .eq('id', 1)
-    .single();
+  let data = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('site_config')
+      .select('*')
+      .eq('id', 1)
+      .single();
+    if (!error) data = rawData;
+  } catch (e) {
+    console.error('[ConfiguracoesPage]', e);
+  }
 
   const config = ((data as SiteConfig | null) ?? {
     id: 1,
@@ -30,11 +36,17 @@ export default async function ConfiguracoesPage() {
     updated_at: new Date().toISOString(),
   }) as SiteConfig;
 
-  const { data: tiposData } = await supabase
-    .from('tipos_impressao')
-    .select('*')
-    .order('ordem', { ascending: true })
-    .order('nome', { ascending: true });
+  let tiposData = null;
+  try {
+    const { data: rawData, error } = await supabase
+      .from('tipos_impressao')
+      .select('*')
+      .order('ordem', { ascending: true })
+      .order('nome', { ascending: true });
+    if (!error) tiposData = rawData;
+  } catch (e) {
+    console.error('[ConfiguracoesPage]', e);
+  }
   const tipos = (tiposData as TipoImpressao[] | null) ?? [];
 
   return <ConfiguracoesClient config={config} tiposImpressao={tipos} />;

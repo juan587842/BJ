@@ -11,7 +11,7 @@ export async function confirmarPedido(pedidoId: string) {
   // RPC faz: valida estoque → baixa estoque → marca como confirmado (transacional)
   const { error } = await supabase.rpc('confirmar_pedido', {
     pedido_id_param: pedidoId,
-  } as any);
+  });
 
   if (error) {
     return { success: false, error: error.message || 'Erro ao confirmar pedido.' };
@@ -27,9 +27,9 @@ export async function cancelarPedido(pedidoId: string, motivo?: string) {
   if (!user) return { success: false, error: 'Não autorizado.' };
 
   // RPC atômica: valida status, devolve estoque (se confirmado), marca cancelado.
-  const { error } = await (supabase as any).rpc('cancelar_pedido', {
+  const { error } = await supabase.rpc('cancelar_pedido', {
     pedido_id_param: pedidoId,
-    motivo_param: motivo?.trim() || null,
+    motivo_param: motivo?.trim() || undefined,
   });
 
   if (error) {

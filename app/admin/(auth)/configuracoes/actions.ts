@@ -82,7 +82,7 @@ export async function atualizarConfigImpressoes(input: ImpressoesConfigInput) {
       impressoes_ativa: input.impressoes_ativa,
       impressao_preco_pb_centavos: input.impressao_preco_pb_centavos,
       impressao_preco_colorida_centavos: input.impressao_preco_colorida_centavos,
-    } as any)
+    })
     .eq('id', 1);
 
   if (error) return { success: false, error: 'Erro ao salvar configurações de impressões.' };
@@ -112,7 +112,7 @@ export async function criarTipoImpressao(input: TipoImpressaoInput) {
     icone: input.icone?.trim() || null,
     ordem: input.ordem ?? 0,
     ativo: input.ativo ?? true,
-  } as any);
+  });
 
   if (error) return { success: false, error: 'Erro ao criar tipo.' };
   revalidatePath('/admin/configuracoes');
@@ -134,7 +134,7 @@ export async function atualizarTipoImpressao(id: string, input: TipoImpressaoInp
       icone: input.icone?.trim() || null,
       ordem: input.ordem ?? 0,
       ativo: input.ativo ?? true,
-    } as any)
+    })
     .eq('id', id);
 
   if (error) return { success: false, error: 'Erro ao atualizar tipo.' };
@@ -150,7 +150,12 @@ export async function deletarTipoImpressao(id: string) {
 
   const { error } = await supabase.from('tipos_impressao').delete().eq('id', id);
 
-  if (error) return { success: false, error: 'Não foi possível deletar (talvez em uso).' };
+  if (error) {
+    if (error.code === '23503') {
+      return { success: false, error: 'Não é possível excluir este tipo pois existem impressões vinculadas.' };
+    }
+    return { success: false, error: 'Não foi possível deletar (talvez em uso).' };
+  }
   revalidatePath('/admin/configuracoes');
   revalidatePath('/impressoes');
   return { success: true };

@@ -42,7 +42,6 @@ interface Props {
   produtos: Produto[];
   categorias: Categoria[];
   pedidosConfig?: PedidosConfig;
-  impressoesAtiva?: boolean;
 }
 
 function fmt(v: number) {
@@ -128,7 +127,7 @@ function ProductCardWithQty({
   );
 }
 
-export default function CatalogoOriginal({ produtos, categorias, pedidosConfig, impressoesAtiva }: Props) {
+export default function CatalogoOriginal({ produtos, categorias, pedidosConfig }: Props) {
   const [busca, setBusca] = useState('');
   const [categoriaAtiva, setCategoriaAtiva] = useState('');
   const [qtys, setQtys] = useState<Record<string, number>>({});

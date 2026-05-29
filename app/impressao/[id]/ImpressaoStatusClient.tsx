@@ -2,22 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Clock, XCircle, Loader2, Home } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, Loader2, Printer, Home } from 'lucide-react';
+import type { Impressao, ImpressaoStatus } from '@/types';
 
-export interface PedidoView {
+interface ImpressaoView {
   id: string;
   numero: number;
-  status: 'pendente' | 'pago' | 'confirmado' | 'cancelado' | 'concluido';
+  status: ImpressaoStatus;
   total_centavos: number;
-  tipo_pagamento: 'online' | 'retirada_local';
+  modo_cor: string;
+  quantidade_folhas: number;
+  tipo_impressao_nome: string;
+  tipo_pagamento: string;
+  cliente_nome: string;
   sumup_checkout_id: string | null;
-  cliente_nome: string | null;
 }
 
 const fmt = (cents: number) =>
   (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const META: Record<PedidoView['status'], { label: string; cor: string; Icon: any; desc: string }> = {
+const META: Record<ImpressaoStatus, { label: string; cor: string; Icon: any; desc: string }> = {
   pendente: {
     label: 'Aguardando pagamento',
     cor: 'text-amber-400',
@@ -28,35 +32,47 @@ const META: Record<PedidoView['status'], { label: string; cor: string; Icon: any
     label: 'Pagamento confirmado',
     cor: 'text-emerald-400',
     Icon: CheckCircle2,
-    desc: 'Pagamento recebido. A banca já foi notificada.',
+    desc: 'Pagamento recebido! Sua impressão será preparada.',
   },
-  confirmado: {
-    label: 'Pedido confirmado',
+  em_producao: {
+    label: 'Em produção',
     cor: 'text-indigo-400',
-    Icon: CheckCircle2,
-    desc: 'A banca confirmou seu pedido e está preparando.',
+    Icon: Printer,
+    desc: 'Sua impressão está sendo preparada.',
   },
   concluido: {
-    label: 'Pedido concluído',
+    label: 'Impressão pronta',
     cor: 'text-emerald-400',
     Icon: CheckCircle2,
-    desc: 'Pedido finalizado. Obrigado pela preferência!',
+    desc: 'Sua impressão está pronta para retirada!',
   },
   cancelado: {
-    label: 'Pedido cancelado',
+    label: 'Cancelada',
     cor: 'text-red-400',
     Icon: XCircle,
-    desc: 'O pagamento não foi concluído ou o pedido foi cancelado.',
+    desc: 'O pagamento não foi concluído ou a impressão foi cancelada.',
   },
 };
 
-export default function PedidoStatusClient({ pedido: initial }: { pedido: PedidoView }) {
-  const [pedido, setPedido] = useState<PedidoView>(initial);
+export default function ImpressaoStatusClient({ impressao: initial }: { impressao: Impressao }) {
+  const [impressao, setImpressao] = useState<ImpressaoView>({
+    id: initial.id,
+    numero: initial.numero,
+    status: initial.status,
+    total_centavos: initial.total_centavos,
+    modo_cor: initial.modo_cor,
+    quantidade_folhas: initial.quantidade_folhas,
+    tipo_impressao_nome: initial.tipo_impressao_nome,
+    tipo_pagamento: initial.tipo_pagamento,
+    cliente_nome: initial.cliente_nome,
+    sumup_checkout_id: initial.sumup_checkout_id,
+  });
+
   const [sincronizando, setSincronizando] = useState(false);
 
   useEffect(() => {
-    if (pedido.status !== 'pendente' || pedido.tipo_pagamento !== 'online') return;
-    if (!pedido.sumup_checkout_id) return;
+    if (impressao.status !== 'pendente' || impressao.tipo_pagamento !== 'online') return;
+    if (!impressao.sumup_checkout_id) return;
 
     let cancelado = false;
     let tentativas = 0;
@@ -69,12 +85,12 @@ export default function PedidoStatusClient({ pedido: initial }: { pedido: Pedido
         const res = await fetch('/api/sumup/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pedido_id: pedido.id }),
+          body: JSON.stringify({ impressao_id: impressao.id }),
         });
         if (res.ok) {
           const d = await res.json();
-          if (d.status && d.status !== pedido.status) {
-            setPedido((p) => ({ ...p, status: d.status }));
+          if (d.status && d.status !== impressao.status) {
+            setImpressao((p) => ({ ...p, status: d.status }));
           }
         }
       } catch {}
@@ -89,9 +105,9 @@ export default function PedidoStatusClient({ pedido: initial }: { pedido: Pedido
       cancelado = true;
       clearTimeout(t);
     };
-  }, [pedido.id, pedido.status, pedido.tipo_pagamento, pedido.sumup_checkout_id]);
+  }, [impressao.id, impressao.status, impressao.tipo_pagamento, impressao.sumup_checkout_id]);
 
-  const meta = META[pedido.status];
+  const meta = META[impressao.status] ?? META.pendente;
   const Icon = meta.Icon;
 
   return (
@@ -102,31 +118,39 @@ export default function PedidoStatusClient({ pedido: initial }: { pedido: Pedido
             <Icon className="w-9 h-9" />
           </div>
           <p className="text-[10px] font-black tracking-[0.25em] uppercase text-[#D4AF37]">
-            Pedido #{String(pedido.numero).padStart(4, '0')}
+            Impressão #{String(impressao.numero).padStart(4, '0')}
           </p>
           <h1 className={`text-2xl font-black mt-1 ${meta.cor}`}>{meta.label}</h1>
           <p className="text-sm text-white/60 mt-2 max-w-xs">{meta.desc}</p>
 
           <div className="mt-6 w-full border-t border-white/5 pt-5 space-y-2 text-sm">
-            {pedido.cliente_nome && (
+            {impressao.cliente_nome && (
               <div className="flex justify-between">
                 <span className="text-white/50">Cliente</span>
-                <span className="font-medium">{pedido.cliente_nome}</span>
+                <span className="font-medium">{impressao.cliente_nome}</span>
               </div>
             )}
             <div className="flex justify-between">
+              <span className="text-white/50">Tipo</span>
+              <span className="font-medium">{impressao.tipo_impressao_nome} — {impressao.modo_cor === 'pb' ? 'P&B' : 'Colorida'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-white/50">Folhas</span>
+              <span className="font-medium">{impressao.quantidade_folhas}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-white/50">Pagamento</span>
               <span className="font-medium">
-                {pedido.tipo_pagamento === 'online' ? 'Online (SumUp)' : 'Retirada no local'}
+                {impressao.tipo_pagamento === 'online' ? 'Online (SumUp)' : 'Retirada no local'}
               </span>
             </div>
             <div className="flex justify-between text-base pt-2">
               <span className="text-white/50">Total</span>
-              <span className="font-black text-[#D4AF37]">{fmt(pedido.total_centavos)}</span>
+              <span className="font-black text-[#D4AF37]">{fmt(impressao.total_centavos)}</span>
             </div>
           </div>
 
-          {sincronizando && pedido.status === 'pendente' && (
+          {sincronizando && impressao.status === 'pendente' && (
             <div className="mt-5 flex items-center gap-2 text-xs text-white/40">
               <Loader2 className="w-3 h-3 animate-spin" />
               Verificando pagamento...

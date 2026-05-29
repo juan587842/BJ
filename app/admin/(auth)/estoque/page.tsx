@@ -21,6 +21,7 @@ export default function EstoquePage() {
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleteError, setDeleteError] = useState('');
 
   const fetchProdutos = async () => {
     let query = supabase.from('produtos').select('*, categoria:categorias(nome)').order('nome');
@@ -43,7 +44,16 @@ export default function EstoquePage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir este produto?')) return;
-    await supabase.from('produtos').delete().eq('id', id);
+    setDeleteError('');
+    const { error } = await supabase.from('produtos').delete().eq('id', id);
+    if (error) {
+      if (error.code === '23503') {
+        setDeleteError('Não é possível excluir este produto pois existem pedidos ou vendas vinculados.');
+      } else {
+        setDeleteError('Erro ao excluir produto.');
+      }
+      return;
+    }
     fetchProdutos();
   };
 
@@ -61,6 +71,13 @@ export default function EstoquePage() {
         </button>
       </div>
 
+      {deleteError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 flex items-center justify-between">
+          <span>{deleteError}</span>
+          <button onClick={() => setDeleteError('')} className="text-red-500 hover:text-red-700 dark:hover:text-red-300 ml-2">&times;</button>
+        </div>
+      )}
+
       <div className="card p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
@@ -76,10 +93,10 @@ export default function EstoquePage() {
             <AlertTriangle className="w-4 h-4" /> Estoque baixo
           </button>
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/50 p-1 opacity-90 rounded-xl border border-slate-200 dark:border-slate-700 sm:ml-auto">
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`} title="Visualização em Grade">
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`} title="Visualização em Grade">
               <LayoutGrid className="w-4 h-4" />
             </button>
-            <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-lg transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`} title="Visualização em Lista">
+            <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-lg transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`} title="Visualização em Lista">
               <List className="w-4 h-4" />
             </button>
           </div>

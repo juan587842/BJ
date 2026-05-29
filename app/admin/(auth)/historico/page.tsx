@@ -36,19 +36,27 @@ export default async function HistoricoPage({
     }
   }
 
-  const [{ data: vendas }, { data: stats }] = await Promise.all([
-    supabase
-      .from('vendas')
-      .select('*, forma_pagamento:formas_pagamento(nome, icone), pagamentos:venda_pagamentos(forma_pagamento_id, valor, forma:formas_pagamento(nome, icone))')
-      .gte('created_at', inicioStr)
-      .lte('created_at', fimStr)
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('vendas')
-      .select('total, itens_count')
-      .gte('created_at', inicioStr)
-      .lte('created_at', fimStr),
-  ]);
+  let vendas = null;
+  let stats = null;
+  try {
+    const [vendasResult, statsResult] = await Promise.all([
+      supabase
+        .from('vendas')
+        .select('*, forma_pagamento:formas_pagamento(nome, icone), pagamentos:venda_pagamentos(forma_pagamento_id, valor, forma:formas_pagamento(nome, icone))')
+        .gte('created_at', inicioStr)
+        .lte('created_at', fimStr)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('vendas')
+        .select('total, itens_count')
+        .gte('created_at', inicioStr)
+        .lte('created_at', fimStr),
+    ]);
+    if (!vendasResult.error) vendas = vendasResult.data;
+    if (!statsResult.error) stats = statsResult.data;
+  } catch (e) {
+    console.error('[HistoricoPage]', e);
+  }
 
   const vendasTyped = (vendas as any[]) || [];
   const statsTyped = (stats as any[]) || [];

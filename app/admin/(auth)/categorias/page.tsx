@@ -15,6 +15,7 @@ export default function CategoriasPage() {
   const [descricao, setDescricao] = useState('');
   const [icone, setIcone] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const fetchCategorias = async () => {
     const { data } = await supabase.from('categorias').select('*').order('nome');
@@ -54,7 +55,16 @@ export default function CategoriasPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir esta categoria?')) return;
-    await supabase.from('categorias').delete().eq('id', id);
+    setDeleteError('');
+    const { error } = await supabase.from('categorias').delete().eq('id', id);
+    if (error) {
+      if (error.code === '23503') {
+        setDeleteError('Não é possível excluir esta categoria pois existem produtos vinculados.');
+      } else {
+        setDeleteError('Erro ao excluir categoria.');
+      }
+      return;
+    }
     fetchCategorias();
   };
 
@@ -69,6 +79,13 @@ export default function CategoriasPage() {
           <Plus className="w-4 h-4" /> Nova Categoria
         </button>
       </div>
+
+      {deleteError && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 flex items-center justify-between">
+          <span>{deleteError}</span>
+          <button onClick={() => setDeleteError('')} className="text-red-500 hover:text-red-700 dark:hover:text-red-300 ml-2">&times;</button>
+        </div>
+      )}
 
       <div className="card">
         {categorias.length === 0 ? (
