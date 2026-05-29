@@ -36,7 +36,9 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.href = '/admin/dashboard';
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get('redirect') || '/admin/dashboard';
+    window.location.href = redirectTo;
   };
 
   return (

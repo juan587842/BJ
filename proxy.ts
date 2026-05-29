@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin/login');
+  const isLoginPage = pathname === '/admin/login';
 
   let response = NextResponse.next({ request });
 
@@ -28,7 +28,11 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (isAdminRoute && !user) {
+  if (isLoginPage && user) {
+    response = NextResponse.redirect(new URL('/admin/dashboard', request.url));
+  }
+
+  if (!isLoginPage && !user) {
     const loginUrl = new URL('/admin/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     response = NextResponse.redirect(loginUrl);
@@ -38,5 +42,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path((?!login).*)'],
+  matcher: ['/admin/:path*'],
 };
