@@ -41,12 +41,15 @@ export default async function CatalogoPage() {
     retirada_local_ativa: config?.retirada_local_ativa ?? false,
   };
 
+  const impressoesAtiva = config?.impressoes_ativa ?? false;
+
   if (modo === 'catalogo') {
     return (
       <CatalogoOriginal
         produtos={produtosTyped}
         categorias={categoriasTyped}
         pedidosConfig={pedidosConfig}
+        impressoesAtiva={impressoesAtiva}
       />
     );
   }
@@ -56,6 +59,7 @@ export default async function CatalogoPage() {
       produtos={produtosTyped}
       categorias={categoriasTyped}
       pedidosConfig={pedidosConfig}
+      impressoesAtiva={impressoesAtiva}
     />
   );
 }

@@ -42,6 +42,7 @@ interface Props {
   produtos: Produto[];
   categorias: Categoria[];
   pedidosConfig?: PedidosConfig;
+  impressoesAtiva?: boolean;
 }
 
 function fmt(v: number) {
@@ -127,7 +128,7 @@ function ProductCardWithQty({
   );
 }
 
-export default function CatalogoOriginal({ produtos, categorias, pedidosConfig }: Props) {
+export default function CatalogoOriginal({ produtos, categorias, pedidosConfig, impressoesAtiva }: Props) {
   const [busca, setBusca] = useState('');
   const [categoriaAtiva, setCategoriaAtiva] = useState('');
   const [qtys, setQtys] = useState<Record<string, number>>({});
@@ -187,13 +188,15 @@ export default function CatalogoOriginal({ produtos, categorias, pedidosConfig }
                 Banca do Jonas
               </span>
             </div>
-            <a
-              href="/impressoes"
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
-            >
-              <Printer className="w-4 h-4" />
-              Impressões
-            </a>
+            {impressoesAtiva && (
+              <a
+                href="/impressoes"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+              >
+                <Printer className="w-4 h-4" />
+                Impressões
+              </a>
+            )}
           </div>
         </div>
       </header>

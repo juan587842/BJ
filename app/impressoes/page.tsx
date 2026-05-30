@@ -23,13 +23,17 @@ export default async function ImpressoesPage() {
   }
 
   const config = (configData as SiteConfig | null) ?? {
-    impressoes_ativa: true,
+    impressoes_ativa: false,
     pagamento_online_ativo: false,
     retirada_local_ativa: true,
     impressao_preco_pb_centavos: 50,
     impressao_preco_colorida_centavos: 150,
     sumup_modo: 'sandbox',
   } as SiteConfig;
+
+  if (!config.impressoes_ativa) {
+    notFound();
+  }
 
   let tiposData = null;
   try {
