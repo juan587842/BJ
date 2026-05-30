@@ -20,15 +20,24 @@ const PDFDownloadLink = dynamic(
 const TEMPLATES: { id: TemplateId; label: string; descricao: string }[] = [
   { id: 'classico', label: 'Clássico', descricao: 'Serif tradicional' },
   { id: 'moderno', label: 'Moderno', descricao: 'Sidebar colorida' },
-  { id: 'minimalista', label: 'Minimalista', descricao: 'Limpo e direto' },
+];
+
+const CORES_DESTAQUE = [
+  { valor: '#0d7c7c', label: 'Teal' },
+  { valor: '#7a2828', label: 'Bordô' },
+  { valor: '#1e3a5f', label: 'Azul marinho' },
+  { valor: '#2d5a27', label: 'Verde' },
+  { valor: '#5b2c6f', label: 'Roxo' },
+  { valor: '#bf5b04', label: 'Laranja' },
 ];
 
 export default function CurriculoClient() {
   const [curriculo, setCurriculo] = useState<Curriculo>(CURRICULO_VAZIO);
   const [template, setTemplate] = useState<TemplateId>('classico');
+  const [corDestaque, setCorDestaque] = useState('#7a2828');
   const [aba, setAba] = useState<'form' | 'preview'>('form');
 
-  const documento = useMemo(() => <CurriculoPreview curriculo={curriculo} template={template} />, [curriculo, template]);
+  const documento = useMemo(() => <CurriculoPreview curriculo={curriculo} template={template} corDestaque={corDestaque} />, [curriculo, template, corDestaque]);
 
   const filename = useMemo(() => {
     const base = curriculo.dados.nome.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -41,7 +50,6 @@ export default function CurriculoClient() {
 
   return (
     <div className="space-y-4">
-      {/* Header + ações */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Currículo</h1>
@@ -67,32 +75,54 @@ export default function CurriculoClient() {
         </div>
       </div>
 
-      {/* Seletor de templates */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
-        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Modelo</div>
-        <div className="grid grid-cols-3 gap-2">
-          {TEMPLATES.map((t) => {
-            const ativo = template === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTemplate(t.id)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition border ${
-                  ativo
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
-                }`}
-              >
-                <div>{t.label}</div>
-                <div className={`text-[10px] mt-0.5 ${ativo ? 'text-indigo-100' : 'text-slate-400'}`}>{t.descricao}</div>
-              </button>
-            );
-          })}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Modelo</div>
+            <div className="grid grid-cols-2 gap-2">
+              {TEMPLATES.map((t) => {
+                const ativo = template === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTemplate(t.id)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition border ${
+                      ativo
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
+                    }`}
+                  >
+                    <div>{t.label}</div>
+                    <div className={`text-[10px] mt-0.5 ${ativo ? 'text-indigo-100' : 'text-slate-400'}`}>{t.descricao}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Cor de destaque</div>
+            <div className="flex flex-wrap gap-2">
+              {CORES_DESTAQUE.map((cor) => {
+                const ativo = corDestaque === cor.valor;
+                return (
+                  <button
+                    key={cor.valor}
+                    type="button"
+                    onClick={() => setCorDestaque(cor.valor)}
+                    title={cor.label}
+                    className={`w-9 h-9 rounded-lg transition border-2 ${
+                      ativo ? 'border-slate-900 dark:border-white scale-110' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                    style={{ backgroundColor: cor.valor }}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Abas mobile */}
       <div className="lg:hidden flex gap-2 border-b border-slate-200 dark:border-slate-700">
         <button
           onClick={() => setAba('form')}
@@ -108,7 +138,6 @@ export default function CurriculoClient() {
         </button>
       </div>
 
-      {/* Conteúdo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={`${aba === 'form' ? 'block' : 'hidden'} lg:block`}>
           <CurriculoForm curriculo={curriculo} setCurriculo={setCurriculo} />

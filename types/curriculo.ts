@@ -49,7 +49,7 @@ export interface Curriculo {
   idiomas: Idioma[];
 }
 
-export type TemplateId = 'classico' | 'moderno' | 'minimalista';
+export type TemplateId = 'classico' | 'moderno';
 
 export const CURRICULO_VAZIO: Curriculo = {
   dados: {

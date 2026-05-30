@@ -3,95 +3,113 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { Curriculo } from '@/types/curriculo';
 
-const TEAL = '#0d7c7c';
-const TEAL_DARK = '#0a5f5f';
+function darken(hex: string, amount = 0.2): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const dr = Math.max(0, Math.round(r * (1 - amount)));
+  const dg = Math.max(0, Math.round(g * (1 - amount)));
+  const db = Math.max(0, Math.round(b * (1 - amount)));
+  return `#${dr.toString(16).padStart(2, '0')}${dg.toString(16).padStart(2, '0')}${db.toString(16).padStart(2, '0')}`;
+}
+
+function lighten(hex: string, amount = 0.5): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const lr = Math.min(255, Math.round(r + (255 - r) * amount));
+  const lg = Math.min(255, Math.round(g + (255 - g) * amount));
+  const lb = Math.min(255, Math.round(b + (255 - b) * amount));
+  return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`;
+}
+
 const SAND = '#f5f1ea';
 const INK = '#2a2a2a';
 const MUTED = '#6b6b6b';
 
-const styles = StyleSheet.create({
-  page: {
-    flexDirection: 'row',
-    fontFamily: 'Helvetica',
-    fontSize: 10,
-    color: INK,
-    lineHeight: 1.55,
-  },
-  sidebar: {
-    width: '36%',
-    backgroundColor: SAND,
-    paddingTop: 50,
-    paddingBottom: 40,
-    paddingHorizontal: 30,
-  },
-  nomeBloco: { marginBottom: 32 },
-  nome: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 26,
-    color: TEAL_DARK,
-    lineHeight: 1.15,
-    marginBottom: 6,
-  },
-  cargoTopo: {
-    fontSize: 10.5,
-    color: TEAL,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    fontFamily: 'Helvetica-Bold',
-  },
-  sidebarSecao: { marginBottom: 26 },
-  sidebarTitulo: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 9.5,
-    color: TEAL_DARK,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 10,
-  },
-  sidebarItem: { marginBottom: 8 },
-  sidebarLabel: {
-    fontSize: 7.5,
-    color: MUTED,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 1,
-  },
-  sidebarTexto: { fontSize: 9.5, color: INK },
-
-  main: {
-    flex: 1,
-    paddingTop: 50,
-    paddingBottom: 40,
-    paddingHorizontal: 36,
-    backgroundColor: '#ffffff',
-  },
-  secao: { marginBottom: 24 },
-  secaoTituloWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  secaoBarra: { width: 4, height: 18, backgroundColor: TEAL, marginRight: 10 },
-  secaoTitulo: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 13,
-    color: TEAL_DARK,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  itemLinha: { marginBottom: 14, paddingBottom: 4 },
-  itemTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 },
-  itemTitulo: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: INK },
-  itemPeriodo: { fontSize: 9, color: MUTED },
-  itemSub: { fontSize: 10, color: TEAL, fontFamily: 'Helvetica-Bold', marginBottom: 5 },
-  texto: { fontSize: 9.5, color: '#3d3d3d', lineHeight: 1.55 },
-
-  objetivoTexto: { fontSize: 10, color: '#3d3d3d', lineHeight: 1.65 },
-  idiomaLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  idiomaBarras: { flexDirection: 'row', gap: 2 },
-  idiomaPill: { width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL },
-  idiomaPillVazio: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#d4cdbe' },
-});
+function getStyles(accent: string, accentDark: string, accentLight: string) {
+  return StyleSheet.create({
+    page: {
+      flexDirection: 'row',
+      fontFamily: 'Helvetica',
+      fontSize: 10,
+      color: INK,
+      lineHeight: 1.55,
+    },
+    sidebar: {
+      width: '36%',
+      backgroundColor: SAND,
+      paddingTop: 50,
+      paddingBottom: 40,
+      paddingHorizontal: 30,
+    },
+    nomeBloco: { marginBottom: 32 },
+    nome: {
+      fontFamily: 'Helvetica-Bold',
+      fontSize: 24,
+      color: accentDark,
+      lineHeight: 1.15,
+      marginBottom: 6,
+    },
+    cargoTopo: {
+      fontSize: 10.5,
+      color: accent,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+      fontFamily: 'Helvetica-Bold',
+    },
+    sidebarSecao: { marginBottom: 26 },
+    sidebarTitulo: {
+      fontFamily: 'Helvetica-Bold',
+      fontSize: 9.5,
+      color: accentDark,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 10,
+    },
+    sidebarItem: { marginBottom: 8 },
+    sidebarLabel: {
+      fontSize: 7.5,
+      color: MUTED,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 1,
+    },
+    sidebarTexto: { fontSize: 9.5, color: INK },
+    main: {
+      flex: 1,
+      paddingTop: 50,
+      paddingBottom: 40,
+      paddingHorizontal: 36,
+      backgroundColor: '#ffffff',
+    },
+    secao: { marginBottom: 24 },
+    secaoTituloWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    secaoBarra: { width: 4, height: 18, backgroundColor: accent, marginRight: 10 },
+    secaoTitulo: {
+      fontFamily: 'Helvetica-Bold',
+      fontSize: 13,
+      color: accentDark,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    itemLinha: { marginBottom: 14, paddingBottom: 4 },
+    itemTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 },
+    itemTitulo: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: INK },
+    itemPeriodo: { fontSize: 9, color: MUTED },
+    itemSub: { fontSize: 10, color: accent, fontFamily: 'Helvetica-Bold', marginBottom: 5 },
+    texto: { fontSize: 9.5, color: '#3d3d3d', lineHeight: 1.55 },
+    objetivoTexto: { fontSize: 10, color: '#3d3d3d', lineHeight: 1.65 },
+    idiomaLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    idiomaBarras: { flexDirection: 'row', gap: 2 },
+    idiomaPill: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent },
+    idiomaPillVazio: { width: 6, height: 6, borderRadius: 3, backgroundColor: accentLight },
+  });
+}
 
 const NIVEL_PONTOS: Record<string, number> = {
   'Básico': 1, 'Intermediário': 2, 'Avançado': 3, 'Fluente': 4, 'Nativo': 5,
@@ -102,18 +120,22 @@ function periodo(inicio: string, fim: string, atual?: boolean) {
   return `${inicio || '?'} — ${atual ? 'Atual' : (fim || '?')}`;
 }
 
-function SecaoTitulo({ titulo }: { titulo: string }) {
-  return (
-    <View style={styles.secaoTituloWrap}>
-      <View style={styles.secaoBarra} />
-      <Text style={styles.secaoTitulo}>{titulo}</Text>
-    </View>
-  );
-}
-
-export default function ModernoTemplate({ curriculo }: { curriculo: Curriculo }) {
+export default function ModernoTemplate({ curriculo, corDestaque }: { curriculo: Curriculo; corDestaque: string }) {
   const c = curriculo;
+  const accent = corDestaque;
+  const accentDark = darken(accent, 0.2);
+  const accentLight = lighten(accent, 0.7);
+  const styles = getStyles(accent, accentDark, accentLight);
   const cargoTopo = c.experiencias[0]?.cargo || '';
+
+  function SecaoTitulo({ titulo }: { titulo: string }) {
+    return (
+      <View style={styles.secaoTituloWrap}>
+        <View style={styles.secaoBarra} />
+        <Text style={styles.secaoTitulo}>{titulo}</Text>
+      </View>
+    );
+  }
 
   return (
     <Document>
