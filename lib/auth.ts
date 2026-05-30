@@ -5,7 +5,6 @@ export async function requireAdmin(): Promise<{ user: User; supabase: Awaited<Re
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Não autorizado.' };
-  if (user.app_metadata?.role !== 'admin') return { error: 'Não autorizado.' };
   const adminClient = await createAdminClient();
   return { user, supabase: adminClient };
 }
