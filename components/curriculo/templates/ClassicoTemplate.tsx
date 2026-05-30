@@ -37,7 +37,7 @@ function getStyles(accent: string, line: string) {
       letterSpacing: 4,
       color: INK,
       textTransform: 'uppercase',
-      marginBottom: 8,
+      marginBottom: 16,
     },
     ornamento: {
       flexDirection: 'row',
