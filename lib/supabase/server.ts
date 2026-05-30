@@ -17,6 +17,7 @@ export async function createClient() {
           // Cannot set cookies in server components
         },
       },
+      cookieEncoding: 'raw',
     }
   );
 }
@@ -32,6 +33,7 @@ export async function createAdminClient() {
         },
         setAll() {},
       },
+      cookieEncoding: 'raw',
     }
   );
 }
